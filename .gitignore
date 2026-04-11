@@ -1,0 +1,34 @@
+# General
+.env
+.DS_Store
+*.log
+logs/
+
+# Backend & IA (Python)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+ENV/
+env/
+.idea/
+.vscode/
+
+# Models & Data (IA)
+*.pt
+*.onnx
+data/raw/
+data/processed/
+
+# Frontend (Node/React)
+node_modules/
+dist/
+build/
+.npm/
+
+# Hardware (Arduino)
+*.hex
+*.bin
+*.elf
