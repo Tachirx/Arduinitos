@@ -3,6 +3,7 @@
 .DS_Store
 *.log
 logs/
+especificacion_modelo_ia.md
 
 # Backend & IA (Python)
 __pycache__/
