@@ -15,7 +15,8 @@ def setup_logger(name: str) -> logging.Logger:
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
     
-    # Archivo opcional (podemos llevar a otro nivel para logs en BD más adelante)
+    # Archivo opcional (podemos llevar a otro nivel para logs en BD más adelante si logramos configurarlo)
+    #Me recuerdan por fa
     file_handler = logging.FileHandler("backend_system.log")
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)

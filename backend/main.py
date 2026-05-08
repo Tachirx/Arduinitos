@@ -3,7 +3,18 @@ from fastapi.responses import JSONResponse
 from core.logger import log
 import uvicorn
 
+import base_datos
+from rutas import autenticacion, usuarios, eventos
+
+# Inicializar base de datos
+base_datos.inicializar_db()
+
 app = FastAPI(title="Backend Proyecto Visión")
+
+#  Routers
+app.include_router(autenticacion.router)
+app.include_router(usuarios.router)
+app.include_router(eventos.router)
 
 # Middleware / Handler de Excepciones Globales
 @app.exception_handler(Exception)
@@ -23,7 +34,6 @@ def read_root():
 def health_check():
     return {"status": "ok"}
 
-# TODO para el equipo Backend: Agregar Endpoints CRUD y WebSockets
 
 if __name__ == "__main__":
     log.info("Iniciando servicio Backend...")
