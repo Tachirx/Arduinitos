@@ -17,10 +17,10 @@ class PreguntaSeguridad(BaseModel):
     respuesta: str
 
 class RegistroUsuario(BaseModel):
-    cedula: str = Field(..., example="12345678")
-    nombres: str = Field(..., example="Juan")
-    apellidos: str = Field(..., example="Perez")
-    telefono: str = Field(None, example="04121234567")
+    cedula: str = Field(..., ejemplo="12345678")
+    nombres: str = Field(..., ejemplo="Juan")
+    apellidos: str = Field(..., ejemplo="Perez")
+    telefono: str = Field(None, ejemplo="04121234567")
     clave: str = Field(..., min_length=6)
     rol: str = Field("portero", pattern="^(admin|portero)$")
     preguntas: List[PreguntaSeguridad] = Field(..., min_items=3, max_items=3)
