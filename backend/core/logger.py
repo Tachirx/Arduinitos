@@ -15,9 +15,15 @@ def setup_logger(name: str) -> logging.Logger:
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
     
-    # Archivo opcional (podemos llevar a otro nivel para logs en BD más adelante si logramos configurarlo)
-    #Me recuerdan por fa
-    file_handler = logging.FileHandler("backend_system.log")
+    from logging.handlers import RotatingFileHandler
+    
+    # Sistema de rotación de logs (5 MB máximo por archivo, 3 respaldos históricos)
+    file_handler = RotatingFileHandler(
+        "backend_system.log", 
+        maxBytes=5 * 1024 * 1024, 
+        backupCount=3, 
+        encoding="utf-8"
+    )
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
     

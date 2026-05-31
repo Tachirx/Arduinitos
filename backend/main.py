@@ -1,5 +1,8 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+import os
 from core.logger import log
 import uvicorn
 
@@ -11,10 +14,26 @@ base_datos.inicializar_db()
 
 app = FastAPI(title="Backend Proyecto Visión")
 
+# Habilitar CORS para permitir peticiones desde el frontend React
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Asegurar existencia y montar directorio estático de almacenamiento para evidencias de la IA
+ruta_directorio_base = os.path.dirname(os.path.abspath(__file__))
+ruta_almacenamiento = os.path.join(ruta_directorio_base, "almacenamiento")
+os.makedirs(ruta_almacenamiento, exist_ok=True)
+app.mount("/almacenamiento", StaticFiles(directory=ruta_almacenamiento), name="almacenamiento")
+
 #  Routers
 app.include_router(autenticacion.router)
 app.include_router(usuarios.router)
 app.include_router(eventos.router)
+
 
 # Middleware / Handler de Excepciones Globales
 @app.exception_handler(Exception)

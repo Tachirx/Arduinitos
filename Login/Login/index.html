@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UNEFA — Sistema Institucional de Gestión Académica</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/animations.css" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+
+  <!-- ════════════ BACKGROUND ════════════ -->
+  <div class="bg-layer">
+    <!--
+      aca se puede agregar el fondo de pantalla para hacerlo como el inicio de sesion en el SICEU
+      medio flojera ps
+    -->
+    <div class="bg-image placeholder-bg"></div>
+    <div class="bg-overlay"></div>
+    <div class="bg-particles" id="particles"></div>
+  </div>
+
+  <!-- ════════════ MAIN CARD ════════════ -->
+  <main class="main-wrapper">
+    <div class="card" id="authCard">
+
+      <!-- ── LEFT PANEL ── -->
+      <div class="card__left">
+        <img src="assets/images/escudo.png" alt="Escudo UNEFA" class="logo" />
+        <h1 class="brand-name">UNEFA</h1>
+        <p class="brand-full">Universidad Nacional Experimental<br />Politécnica de la Fuerza Armada<br />Nacional Bolivariana</p>
+        <p class="brand-sub">República Bolivariana de Venezuela<br />Desde el 26 de Abril de 1999</p>
+      </div>
+
+      <!-- ── DIVIDER ── -->
+      <div class="card__divider"></div>
+
+      <!-- ── RIGHT PANEL (views) ── -->
+      <div class="card__right">
+
+        <!-- ── VIEW: LOGIN ── -->
+        <div class="view active" id="viewLogin">
+          <div class="view__header view__header--column">
+            <h2>Bienvenido al Sistema de Detección de Uniforme</h2>
+            <p>Ingrese las credenciales necesarias para continuar.</p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">CÉDULA / USUARIO</label>
+            <div class="input-wrap">
+              <i class="fa fa-user input-icon"></i>
+              <input type="text" class="input" id="loginCedula" placeholder="Ej: V-12345678" autocomplete="username" />
+            </div>
+            <span class="field-error" id="loginCedulaErr"></span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">CONTRASEÑA</label>
+            <div class="input-wrap">
+              <i class="fa fa-lock input-icon"></i>
+              <input type="password" class="input" id="loginPass" placeholder="••••••••" autocomplete="current-password" />
+              <button class="toggle-pass" type="button" data-target="loginPass" aria-label="Mostrar contraseña">
+                <i class="fa fa-eye"></i>
+              </button>
+            </div>
+            <span class="field-error" id="loginPassErr"></span>
+          </div>
+
+          <div class="form-row">
+            <label class="checkbox-wrap">
+              <input type="checkbox" id="rememberMe" />
+              <span class="checkbox-custom"></span>
+              Recordar sesión
+            </label>
+            <button class="link-btn" id="goForgot">¿Olvidó su contraseña?</button>
+          </div>
+
+          <button class="btn-primary" id="btnLogin">
+            <span class="btn-text">INICIAR SESIÓN</span>
+            <span class="btn-loader hidden"><i class="fa fa-spinner fa-spin"></i></span>
+          </button>
+
+          <p class="form-footer">
+            ¿No tiene cuenta?
+            <button class="link-btn link-btn--accent" id="goRegister">Crear cuenta</button>
+          </p>
+
+          <p class="support-line">
+            ¿Problemas para ingresar?
+            <a href="https://mail.google.com/mail/?view=cm&to=soporte@unefa.edu.ve&su=Soporte%20Técnico%20SIGNU&body=Buen%20día,%20necesito%20ayuda%20para%20ingresar%20al%20sistema." target="_blank" class="link-underline">Contacte a Soporte Técnico</a>
+          </p>
+        </div>
+
+        <!-- ── VIEW: REGISTER ── -->
+        <div class="view" id="viewRegister">
+          <div class="view__header">
+            <button class="back-btn" id="backFromRegister"><i class="fa fa-arrow-left"></i></button>
+            <div>
+              <h2>Crear Cuenta</h2>
+              <p>Complete los campos para registrarse en el sistema.</p>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">CÉDULA</label>
+              <div class="input-wrap">
+                <i class="fa fa-id-card input-icon"></i>
+                <input type="text" class="input" id="regCedula" placeholder="Ej: V-12345678" />
+              </div>
+              <span class="field-error" id="regCedulaErr"></span>
+            </div>
+
+            <div class="form-group form-group--full">
+              <label class="form-label">NOMBRES Y APELLIDOS</label>
+              <div class="input-wrap">
+                <i class="fa fa-user-circle input-icon"></i>
+                <input type="text" class="input" id="regNombre" placeholder="Ej: Juan Carlos Pérez García" />
+              </div>
+              <span class="field-error" id="regNombreErr"></span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">TELÉFONO</label>
+              <div class="input-wrap">
+                <i class="fa fa-phone input-icon"></i>
+                <input type="tel" class="input" id="regTelefono" placeholder="Ej: 0412-1234567" />
+              </div>
+              <span class="field-error" id="regTelefonoErr"></span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">CORREO ELECTRÓNICO</label>
+              <div class="input-wrap">
+                <i class="fa fa-envelope input-icon"></i>
+                <input type="email" class="input" id="regCorreo" placeholder="Ej: usuario@unefa.edu.ve" />
+              </div>
+              <span class="field-error" id="regCorreoErr"></span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">CONTRASEÑA</label>
+              <div class="input-wrap">
+                <i class="fa fa-lock input-icon"></i>
+                <input type="password" class="input" id="regPass" placeholder="••••••••" />
+                <button class="toggle-pass" type="button" data-target="regPass" aria-label="Mostrar contraseña">
+                  <i class="fa fa-eye"></i>
+                </button>
+              </div>
+              <span class="field-error" id="regPassErr"></span>
+              <div class="pass-strength" id="passStrength">
+                <div class="pass-strength__bar"><div class="pass-strength__fill" id="strengthFill"></div></div>
+                <span class="pass-strength__label" id="strengthLabel"></span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">CONFIRMAR CONTRASEÑA</label>
+              <div class="input-wrap">
+                <i class="fa fa-lock input-icon"></i>
+                <input type="password" class="input" id="regPassConfirm" placeholder="••••••••" />
+                <button class="toggle-pass" type="button" data-target="regPassConfirm" aria-label="Mostrar contraseña">
+                  <i class="fa fa-eye"></i>
+                </button>
+              </div>
+              <span class="field-error" id="regPassConfirmErr"></span>
+            </div>
+          </div>
+
+          <button class="btn-primary btn-primary--register" id="btnRegister">
+            <span class="btn-text">CREAR CUENTA</span>
+            <span class="btn-loader hidden"><i class="fa fa-spinner fa-spin"></i></span>
+          </button>
+
+          <p class="form-footer">
+            ¿Ya tiene cuenta?
+            <button class="link-btn link-btn--accent" id="goLogin">Iniciar sesión</button>
+          </p>
+        </div>
+
+        <!-- ── VIEW: FORGOT PASSWORD ── -->
+        <div class="view" id="viewForgot">
+          <div class="view__header">
+            <button class="back-btn" id="backFromForgot"><i class="fa fa-arrow-left"></i></button>
+            <div>
+              <h2>Recuperar Contraseña</h2>
+              <p>Te enviaremos un enlace a tu Gmail .</p>
+            </div>
+          </div>
+
+          <!-- Step 1: ingresa correo -->
+          <div id="forgotStep1">
+
+            <div class="gmail-banner">
+              <div class="gmail-banner__icon">
+                <svg viewBox="0 0 48 48" width="28" height="28"><path fill="#EA4335" d="M24 5.4L6 18v24h10V26h16v16h10V18z"/><path fill="#4285F4" d="M6 18L24 5.4 42 18v2L24 9 6 20z"/><path fill="#34A853" d="M36 42V26H12v16h8V32h8v10z"/><path fill="#FBBC04" d="M6 18v4l18 11 18-11v-4L24 29z"/></svg>
+              </div>
+              <div class="gmail-banner__text">
+                <strong>Recuperación vía Gmail</strong>
+                <span>El enlace se enviará a tu correo @gmail.com registrado</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">CORREO GMAIL REGISTRADO</label>
+              <div class="input-wrap">
+                <i class="fa fa-envelope input-icon"></i>
+                <input type="email" class="input" id="forgotGmail"
+                  placeholder="Ej: tucorreo@gmail.com"
+                  autocomplete="email" />
+                <span class="gmail-suffix">@gmail.com</span>
+              </div>
+              <span class="field-error" id="forgotGmailErr"></span>
+            </div>
+
+            <div class="info-box info-box--sm">
+              <i class="fa fa-circle-info"></i>
+              <p>Asegúrate de ingresar el Gmail con el que te registraste. El enlace expirará en <strong>30 minutos</strong>.</p>
+            </div>
+
+            <button class="btn-primary" id="btnForgot">
+              <span class="btn-text"><i class="fa fa-paper-plane" style="margin-right:8px"></i>ENVIAR ENLACE DE RECUPERACIÓN</span>
+              <span class="btn-loader hidden"><i class="fa fa-spinner fa-spin"></i></span>
+            </button>
+
+          </div>
+
+          <!-- Step 2: éxito — abrir Gmail -->
+          <div id="forgotStep2" class="hidden">
+            <div class="recovery-success">
+
+              <div class="recovery-success__envelope">
+                <div class="envelope-body">
+                  <div class="envelope-flap"></div>
+                  <div class="envelope-letter">
+                    <i class="fa fa-lock-open"></i>
+                  </div>
+                </div>
+              </div>
+
+              <h3>¡Enlace enviado!</h3>
+              <p>Revisá tu bandeja de entrada en <strong id="sentToEmail"></strong>. Si no lo ves, revisa la carpeta <em>Spam</em>.</p>
+
+              <div class="recovery-steps">
+                <div class="recovery-step">
+                  <span class="step-num">1</span>
+                  <span>Abre el correo de UNEFA en Gmail</span>
+                </div>
+                <div class="recovery-step">
+                  <span class="step-num">2</span>
+                  <span>Haz clic en <strong>"Restablecer contraseña"</strong></span>
+                </div>
+                <div class="recovery-step">
+                  <span class="step-num">3</span>
+                  <span>Elige tu nueva contraseña</span>
+                </div>
+              </div>
+
+              <button class="btn-gmail" id="btnOpenGmail">
+                <svg viewBox="0 0 48 48" width="20" height="20" style="flex-shrink:0"><path fill="#EA4335" d="M24 5.4L6 18v24h10V26h16v16h10V18z"/><path fill="#4285F4" d="M6 18L24 5.4 42 18v2L24 9 6 20z"/><path fill="#34A853" d="M36 42V26H12v16h8V32h8v10z"/><path fill="#FBBC04" d="M6 18v4l18 11 18-11v-4L24 29z"/></svg>
+                ABRIR GMAIL
+              </button>
+
+              <button class="link-btn link-btn--sm" id="btnResend">
+                <i class="fa fa-rotate-right" style="margin-right:5px"></i>No recibí el correo, reenviar
+              </button>
+
+              <button class="link-btn link-btn--accent" id="btnBackToLogin">← Volver al inicio de sesión</button>
+
+            </div>
+          </div>
+
+          <p class="support-line" id="forgotSupport">
+            ¿Problemas para ingresar?
+            <a href="https://mail.google.com/mail/?view=cm&to=soporte@unefa.edu.ve&su=Soporte%20Técnico%20SIGNU&body=Buen%20día,%20necesito%20ayuda%20para%20ingresar%20al%20sistema." target="_blank" class="link-underline">Contacte a Soporte Técnico</a>
+          </p>
+        </div>
+
+      </div><!-- /card__right -->
+    </div><!-- /card -->
+  </main>
+
+  <!-- ════════════ TOAST ════════════ -->
+  <div class="toast" id="toast">
+    <i class="toast__icon fa"></i>
+    <span class="toast__msg"></span>
+  </div>
+
+  <!-- ════════════ FOOTER ════════════ -->
+  <footer class="site-footer">
+    © 2026 UNEFA — Sistema de Detección de Uniforme. Todos los derechos reservados.
+  </footer>
+
+  <script src="js/utils.js"></script>
+  <script src="js/validation.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

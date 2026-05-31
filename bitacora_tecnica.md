@@ -19,3 +19,14 @@
 *   **Módulo:** Backend — Unificación de Usuarios y Autenticación
 *   **Resumen Técnico:** Consolidación de aportes de Miguel, Gladys y Héctor en un núcleo sólido. Se implementó el modelo `Usuario` centralizado con identificación por cédula única y soporte para 3 preguntas de seguridad. Se configuró la autenticación mediante JWT (HS256) con lógica de bloqueo temporal de 15 minutos tras 5 intentos fallidos. Estructura de archivos organizada en `base_datos.py`, `modelos.py`, `core/autenticacion.py` y `rutas/`. Se estableció el entorno virtual (`venv`) con dependencias verificadas (FastAPI, SQLAlchemy, PyMySQL, bcrypt 4.0.1). Pruebas de persistencia y seguridad validadas con éxito en SQLite/MariaDB.
 
+**[2026-05-16 20:45]**
+*   **Módulo:** IA — Análisis de ai-copia e Integración
+*   **Resumen Técnico:** Auditoría técnica detallada y comparativa arquitectónica de `ai - copia` frente al MVP síncrono activo en `ai`. Se identificaron mejoras críticas: ejecución asíncrona multihilo en pipeline desacoplado, muestreo adaptativo de frames, estabilización temporal por ventana y unificación con clases UNEFA (`chaqueta_unefa`). Se detectaron desalineaciones críticas de endpoint en FastAPI (`/eventos/ia` vs `/eventos/`) y falta de persistencia real de eventos en el backend. Se redactó un informe técnico detallado de recomendaciones de migración.
+
+**[2026-05-28 15:05]**
+*   **Módulo:** Frontend — Autenticación y Arquitectura
+*   **Resumen Técnico:** Migración exitosa de la maqueta Vanilla JS/HTML/CSS de Login hacia el entorno React (Vite) en `frontend`. Se componentizó el diseño en `AuthContainer`, `LoginView`, `RegisterView` y `ForgotView`, preservando fielmente los estilos Glassmorphism y la experiencia UX original. Se integró un servicio nativo (`authService.js`) conectándolo con los endpoints FastAPI. Se añadió temporalmente respuestas *hardcodeadas* a las preguntas de seguridad del registro para viabilizar pruebas E2E. En el Backend, se inyectó `CORSMiddleware` en `main.py` para permitir la comunicación cruzada con el frontend.
+
+**[2026-05-28 15:15]**
+*   **Módulo:** Integración Sistémica y Frontend Dashboard
+*   **Resumen Técnico:** Implementación de la Fase 1 y Fase 2 de arquitectura. En hardware, se robusteció el fallback acústico nativo de Windows (`winsound`) como predeterminado ante la ausencia de Arduino, y se sincronizó el payload UART (`ACTIVAR_ALARMA`). En autenticación, se migró el registro y recuperación hacia un esquema interactivo dinámico de 3 preguntas de seguridad acoplado con `GET /auth/preguntas` y `POST /auth/recuperar_clave`. Adicionalmente, se configuró un gestor bidireccional WebSocket en FastAPI (`/eventos/ws`) para despachar alertas en tiempo real hacia React, integrándolo en un nuevo componente `DashboardView.jsx` que incluye historial de eventos con fecha/hora y previsualización de evidencias fotográficas de la IA.

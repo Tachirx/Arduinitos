@@ -92,3 +92,37 @@ def iniciar_sesion(form_data: OAuth2PasswordRequestForm = Depends(), db: Session
     
     token = crear_token_acceso(data={"sub": usuario.cedula})
     return {"access_token": token, "token_type": "bearer"}
+
+class RecuperarClave(BaseModel):
+    cedula: str
+    respuestas: List[str]
+    nueva_clave: str = Field(..., min_length=6)
+
+@router.get("/preguntas/{cedula}")
+def obtener_preguntas(cedula: str, db: Session = Depends(obtener_db)):
+    usuario = db.query(Usuario).filter(Usuario.cedula == cedula).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    preguntas = [p["pregunta"] for p in usuario.preguntas_seguridad]
+    return {"preguntas": preguntas}
+
+@router.post("/recuperar_clave")
+def recuperar_clave(datos: RecuperarClave, db: Session = Depends(obtener_db)):
+    usuario = db.query(Usuario).filter(Usuario.cedula == datos.cedula).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    if len(datos.respuestas) != len(usuario.preguntas_seguridad):
+        raise HTTPException(status_code=400, detail="Cantidad de respuestas incorrecta")
+        
+    for i, p in enumerate(usuario.preguntas_seguridad):
+        if not verificar_clave(datos.respuestas[i].lower().strip(), p["respuesta_hash"]):
+            raise HTTPException(status_code=401, detail="Respuestas de seguridad incorrectas")
+            
+    usuario.clave_hash = generar_hash_clave(datos.nueva_clave)
+    usuario.intentos_fallidos = 0
+    usuario.inicio_bloqueo = None
+    db.commit()
+    
+    return {"mensaje": "Contraseña actualizada exitosamente"}
