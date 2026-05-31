@@ -6,13 +6,17 @@ const DashboardView = ({ onLogout }) => {
   const [eventos, setEventos] = useState([]);
   const [eventoSeleccionado, setEventoSeleccionado] = useState(null);
   const [conexionWS, setConexionWS] = useState(false);
+  const [verEnVivo, setVerEnVivo] = useState(false);
 
   useEffect(() => {
     // 1. Cargar historial
     const fetchEventos = async () => {
       try {
-        // En una app real, aquí se envía el JWT token en los headers
-        const res = await fetch('http://localhost:8000/eventos/');
+        const token = localStorage.getItem('token');
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const res = await fetch(`${API_URL}/eventos/`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
         if (res.ok) {
           const data = await res.json();
           setEventos(data);
@@ -24,7 +28,9 @@ const DashboardView = ({ onLogout }) => {
     fetchEventos();
 
     // 2. Conectar WebSocket
-    const ws = new WebSocket('ws://localhost:8000/eventos/ws');
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    const WS_URL = API_URL.replace(/^http/, 'ws') + '/eventos/ws';
+    const ws = new WebSocket(WS_URL);
     
     ws.onopen = () => {
       setConexionWS(true);
@@ -82,9 +88,14 @@ const DashboardView = ({ onLogout }) => {
             </span>
           </div>
         </div>
-        <button onClick={onLogout} className="btn-primary" style={{ padding: '8px 20px', width: 'auto', borderRadius: '4px' }}>
-          <i className="fa fa-sign-out-alt" style={{ marginRight: '8px' }}></i> SALIR
-        </button>
+        <div style={{ display: 'flex', gap: '15px' }}>
+          <button onClick={() => setVerEnVivo(!verEnVivo)} style={{ padding: '8px 20px', width: 'auto', borderRadius: '4px', background: verEnVivo ? 'var(--accent-red, #f44336)' : 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--white)', cursor: 'pointer', transition: 'all 0.3s' }}>
+            <i className={`fa ${verEnVivo ? 'fa-video-slash' : 'fa-video'}`} style={{ marginRight: '8px' }}></i> {verEnVivo ? 'OCULTAR CÁMARA' : 'VER EN VIVO'}
+          </button>
+          <button onClick={onLogout} className="btn-primary" style={{ padding: '8px 20px', width: 'auto', borderRadius: '4px' }}>
+            <i className="fa fa-sign-out-alt" style={{ marginRight: '8px' }}></i> SALIR
+          </button>
+        </div>
       </header>
 
       {/* MAIN CONTENT */}
@@ -137,18 +148,37 @@ const DashboardView = ({ onLogout }) => {
           </div>
         </div>
 
-        {/* DETALLE DEL EVENTO */}
+        {/* DETALLE DEL EVENTO O EN VIVO */}
         <div className="card" style={{ width: '100%', maxWidth: 'none', height: 'calc(100vh - 150px)', display: 'flex', flexDirection: 'column', padding: '20px' }}>
           <h2 style={{ fontSize: '1.2rem', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>
-            <i className="fa fa-camera" style={{ marginRight: '10px' }}></i>
-            Evidencia Fotográfica
+            <i className={`fa ${verEnVivo ? 'fa-video' : 'fa-camera'}`} style={{ marginRight: '10px' }}></i>
+            {verEnVivo ? 'Transmisión en Vivo' : 'Evidencia Fotográfica'}
           </h2>
 
-          {eventoSeleccionado ? (
+          {verEnVivo ? (
             <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
               <div style={{ flex: 1, background: '#000', borderRadius: '8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                 <img 
-                  src={`http://localhost:8000/${eventoSeleccionado.foto_path}`} 
+                  src="http://localhost:8001/stream" 
+                  alt="Transmisión en Vivo" 
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                  onError={(e) => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/640x480?text=Cámara+no+disponible+o+desconectada' }}
+                />
+                <div style={{ position: 'absolute', top: '15px', right: '15px', background: 'rgba(76, 175, 80, 0.9)', padding: '5px 15px', borderRadius: '20px', fontWeight: 'bold', fontSize: '0.8rem', boxShadow: '0 4px 10px rgba(0,0,0,0.5)' }}>
+                  <i className="fa fa-circle" style={{ color: '#fff', fontSize: '8px', marginRight: '5px', animation: 'pulse 1.5s infinite' }}></i> EN VIVO
+                </div>
+              </div>
+              
+              <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+                <h3 style={{ fontSize: '1rem', marginBottom: '10px', color: 'var(--accent-teal)' }}>Monitoreo en Tiempo Real</h3>
+                <p style={{ margin: 0, fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)' }}>Estás viendo la cámara procesada por el motor de IA en el Edge. Este flujo consume ancho de banda y no se guarda en el servidor.</p>
+              </div>
+            </div>
+          ) : eventoSeleccionado ? (
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <div style={{ flex: 1, background: '#000', borderRadius: '8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                <img 
+                  src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/${eventoSeleccionado.foto_path}`} 
                   alt="Evidencia" 
                   style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                   onError={(e) => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/640x480?text=Imagen+no+encontrada' }}

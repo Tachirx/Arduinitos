@@ -117,8 +117,9 @@ class EstabilizadorVentana:
             if len(hist) == 0:
                 continue
             proporcion = sum(hist) / len(hist)
-            # Retocompatibilidad
-            pass
+            estado_estabilizado = proporcion >= self._fraccion
+            for est in estabilizado.estudiantes:
+                setattr(est, campo, estado_estabilizado)
 
         if self._historial_rostros:
             valores = sorted(self._historial_rostros)

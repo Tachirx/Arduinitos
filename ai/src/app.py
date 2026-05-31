@@ -21,6 +21,7 @@ from detector import (
     EstabilizadorVentana,
     ResultadoDeteccion,
 )
+from streamer import StreamerLocal
 
 logging.basicConfig(
     level=logging.INFO,
@@ -189,6 +190,7 @@ class MotorVisionIA:
             url_eventos=self._config.url_completa_eventos,
             timeout=self._config.timeout_conexion,
         )
+        self._streamer = StreamerLocal(puerto=8001)
 
         self._ultimo_frame_censurado: Optional[np.ndarray] = None
         self._contador_frames = 0
@@ -212,6 +214,7 @@ class MotorVisionIA:
             )
             return
 
+        self._streamer.iniciar()
         log.info("Pipeline de video iniciado. Presiona 'q' para detener.")
 
         try:
@@ -260,6 +263,8 @@ class MotorVisionIA:
 
             frame_renderizado = self._dibujar_hud(frame_censurado, resultado, self._fps)
             self._gestionar_alertas(resultado, frame_censurado)
+
+            self._streamer.actualizar_frame(frame_renderizado)
 
             cv2.imshow("UNEFA - Sistema de Validacion de Vestimenta", frame_renderizado)
 
@@ -397,6 +402,8 @@ class MotorVisionIA:
             self._captura.liberar()
         self._inferencia.detener()
         self._censor.detener()
+        if hasattr(self, '_streamer'):
+            self._streamer.detener()
         cv2.destroyAllWindows()
         log.info("Recursos liberados correctamente.")
 

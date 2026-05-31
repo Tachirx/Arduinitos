@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Enum, Boolean, DateTime, JSON
+from sqlalchemy import Column, Integer, String, Enum, Boolean, DateTime, JSON, ForeignKey
 from datetime import datetime
 from base_datos import Base
 
@@ -34,4 +34,4 @@ class EventoVision(Base):
     metadatos_ia = Column(JSON, nullable=True)
     
     #  portero que validó el evento (no es obligatorio:))
-    id_usuario_validador = Column(Integer, nullable=True)
+    id_usuario_validador = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
