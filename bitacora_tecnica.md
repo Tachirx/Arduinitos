@@ -37,3 +37,37 @@
 **[2026-05-31 16:48]**
 *   **Módulo:** IA & Frontend — Streaming Híbrido MJPEG
 *   **Resumen Técnico:** Implementación de un micro-servidor de streaming de video MJPEG nativo (sin dependencias adicionales como Flask/FastAPI) embebido directamente en la capa de IA (streamer.py puerto 8001). Esto permite una **arquitectura híbrida**: el sistema sigue siendo guiado por eventos (eficiente) y guarda fotos de evidencias, pero el frontend ahora cuenta con un estado interactivo (erEnVivo) en React que carga una etiqueta <img> con el stream en vivo a petición del portero, mostrando el renderizado en tiempo real del HUD de diagnóstico sin saturar el ancho de banda innecesariamente.
+
+
+**[2026-05-31 23:02]**
+*   **Módulo:** Frontend (Estilos & Compilación)
+*   **Resumen Técnico:** Corrección de un error crítico de sintaxis CSS en \`frontend/src/styles/style.css\`. Se restauró el selector \`.back-btn\` faltante antes de un bloque de propiedades que se encontraban huérfanas en la línea 330, lo cual producía un fallo de compilación en \`lightningcss\` durante el proceso de empaquetado de Vite (\`npm run build\`). Posterior a la corrección, se validó la compilación exitosa tanto del Frontend en Vite (React) como del Backend y el Motor de IA en Python (mediante compilación en seco \`py_compile\`), confirmando que la integridad sintáctica de todo el sistema está restablecida.
+
+**[2026-05-31 23:07]**
+*   **Módulo:** Core (Arquitectura de Fallos y Servidor)
+*   **Resumen Técnico:** 
+    1. **Resiliencia de Cámara:** Se modificó \`ai/src/app.py\` para operar en "modo degradado" en caso de no detectar una cámara. En lugar de detener la ejecución, el pipeline genera sintéticamente frames negros con un aviso de error \`ERROR: SIN SENAL DE CAMARA\` y opera a 15 FPS para ahorrar CPU. El servidor de streaming asíncrono se mantiene online evitando caídas de servicio.
+    2. **Fallback Visual en Frontend:** Se implementó en \`DashboardView.jsx\` un render de error inline basado en data-URI SVG con la estética nativa de la app (evitando dependencias externas como via.placeholder.com).
+    3. **Base de Datos:** Se activó temporalmente la base de datos de respaldo en SQLite agregando la variable \`DATABASE_URL=sqlite:///./proyecto.db\` en \`backend/.env\` debido a un error de operación y autenticación GSSAPI (\`auth_gssapi_client\`) persistente con la instancia local de MariaDB. Esto garantiza consistencia de esquema DDL mientras se evita el error 2059 de PyMySQL. Los 3 demonios (FastAPI, Vite, y Motor IA) han sido levantados localmente.
+
+**[2026-05-31 23:11]**
+*   **Módulo:** Core IA & Estabilidad
+*   **Resumen Técnico:** 
+    1. **Ejecución Headless:** Se eliminó la instanciación de ventanas nativas del sistema operativo en OpenCV (\`cv2.imshow\` y \`cv2.waitKey\`) dentro de \`app.py\` para que el servicio opere 100% en segundo plano y asíncrono, delegando toda responsabilidad de renderizado al Frontend a través del \`streamer.py\`.
+    2. **Fallo de Tipo JSON:** Se mitigó un crash severo que detenía el motor en el momento de detección y envío de un webhook (Error: \`Object of type float32 is not JSON serializable\`). Esto se solucionó en \`detector.py\` (Líneas 179-184) forzando el cast de los arrays NumPy \`conf\` y \`cx\` devueltos por YOLO a tipos flotantes nativos primitivos de Python (\`float()\`) justo antes de agregarlos al payload de las alertas.
+
+**[2026-05-31 23:15]**
+*   **Módulo:** Core IA & Configurazione
+*   **Resumen Técnico:** 
+    Se añadió flexibilidad a la detección de fuentes de video. En \`ai/src/configuracion.py\`, la asignación de la cámara (\`fuente_camara\`) ahora se lee automáticamente a través de \`os.environ.get("CAMERA_SOURCE", "0")\`. Esto mantiene la selección automática del hardware predeterminado de la laptop (ID 0) por defecto, pero habilita que administradores puedan forzar una cámara USB externa inyectando simplemente \`CAMERA_SOURCE=1\` sin necesidad de alterar el código de producción.
+
+**[2026-05-31 23:19]**
+*   **Módulo:** Frontend & UX (Dashboard)
+*   **Resumen Técnico:** 
+    1. **Bug de Renderizado Solapado:** Se corrigió un comportamiento no deseado en \`DashboardView.jsx\` donde el renderizado de la cámara en vivo (\`verEnVivo === true\`) prevalecía jerárquicamente sobre la selección de un evento histórico. Ahora, al invocar \`onClick\` sobre un registro, el estado de transmisión se detiene forzosamente (\`setVerEnVivo(false)\`) para priorizar la visualización de la evidencia fotográfica.
+    2. **Iteración Semántica:** Se modificó la jerga técnica en el panel de detalle de la IA (ej. "Metadatos de la IA" -> "Análisis de Vestimenta", "Prendas Faltantes" -> "Motivo de Alerta", "Rostros Detectados" -> "Personas en cuadro") para garantizar un lenguaje de diseño enfocado en la operación del usuario final (personal de portería).
+
+**[2026-05-31 23:21]**
+*   **Módulo:** Frontend (Optimización de Rendimiento y Memoria)
+*   **Resumen Técnico:** 
+    Se mitigó un riesgo latente de fuga de memoria (Memory Leak) en el DOM provocado por el flujo continuo del WebSocket. En \`DashboardView.jsx\`, se implementó una estrategia de truncamiento circular (\`.slice(0, 100)\`) sobre el array de estado de \`eventos\`. Esto asegura que el cliente de React en la portería retenga un máximo de 100 nodos históricos en pantalla de forma rotativa, garantizando un rendimiento estable y sin lag incluso tras sesiones ininterrumpidas de operación 24/7.

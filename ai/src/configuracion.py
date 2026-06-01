@@ -29,7 +29,7 @@ class ConfiguracionIA:
             )
 
     # --- Cámara ---
-    fuente_camara: int = 0
+    fuente_camara: int = int(os.environ.get("CAMERA_SOURCE", "0"))
     ancho_frame: int = 640
     alto_frame: int = 480
     fps_objetivo: int = 30

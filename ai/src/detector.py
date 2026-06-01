@@ -176,11 +176,11 @@ class DetectorVestimenta:
             nombre = self._clases.get(clase_id)
             if nombre and confianza >= _UMBRALES_POR_CLASE.get(nombre, 0.65):
                 x1, y1, x2, y2 = coords
-                cx = (x1 + x2) / 2
+                cx = float((x1 + x2) / 2)
                 objetos.append({
                     "nombre": nombre,
                     "cx": cx,
-                    "conf": confianza,
+                    "conf": float(confianza),
                     "coords": (int(x1), int(y1), int(x2), int(y2))
                 })
 
@@ -188,16 +188,16 @@ class DetectorVestimenta:
             return resultado
 
         # --- Algoritmo de Clustering Espacial 1D por Proximidad Horizontal ---
-        # Ordenamos los objetos detectados de izquierda a derecha por coordenada X central
+        #  objetos detectados de izquierda a derecha por coordenada X central
         objetos_ordenados = sorted(objetos, key=lambda x: x["cx"])
         grupos: list[list[dict]] = []
 
         for obj in objetos_ordenados:
             agrupado = False
             for grupo in grupos:
-                # Centro horizontal promedio del grupo actual
+                # Centro horizontal promedio del grupo actual, verificar esto xfa
                 centro_grupo = sum(g["cx"] for g in grupo) / len(grupo)
-                # Agrupamos si están a menos de 110 píxeles de distancia horizontal
+                # Agrupar si están a menos de 110 píxeles de distancia horizontal
                 if abs(obj["cx"] - centro_grupo) < 110:
                     grupo.append(obj)
                     agrupado = True

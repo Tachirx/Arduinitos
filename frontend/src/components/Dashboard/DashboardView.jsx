@@ -40,8 +40,8 @@ const DashboardView = ({ onLogout }) => {
     ws.onmessage = (event) => {
       const nuevoEvento = JSON.parse(event.data);
       console.log("Nuevo evento recibido:", nuevoEvento);
-      // Añadir al inicio de la lista
-      setEventos(prev => [nuevoEvento, ...prev]);
+      // Añadir al inicio y mantener máximo 100 eventos en memoria DOM para evitar lag en operación 24/7
+      setEventos(prev => [nuevoEvento, ...prev].slice(0, 100));
       
       // Opcional: Si no hay ninguno seleccionado y llega una alerta, auto-seleccionarlo
       if (nuevoEvento.alerta) {
@@ -116,7 +116,10 @@ const DashboardView = ({ onLogout }) => {
                 {eventos.map(evt => (
                   <div 
                     key={evt.id} 
-                    onClick={() => setEventoSeleccionado(evt)}
+                    onClick={() => {
+                      setEventoSeleccionado(evt);
+                      setVerEnVivo(false);
+                    }}
                     style={{ 
                       padding: '15px', 
                       background: eventoSeleccionado?.id === evt.id ? 'rgba(100, 255, 218, 0.1)' : 'rgba(255,255,255,0.03)', 
@@ -162,7 +165,7 @@ const DashboardView = ({ onLogout }) => {
                   src="http://localhost:8001/stream" 
                   alt="Transmisión en Vivo" 
                   style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                  onError={(e) => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/640x480?text=Cámara+no+disponible+o+desconectada' }}
+                  onError={(e) => { e.target.onerror = null; e.target.src = 'data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22640%22%20height%3D%22480%22%3E%3Crect%20width%3D%22640%22%20height%3D%22480%22%20fill%3D%22%230a1628%22%2F%3E%3Ctext%20x%3D%22320%22%20y%3D%22240%22%20font-family%3D%22sans-serif%22%20font-size%3D%2222%22%20fill%3D%22%23e05c5c%22%20text-anchor%3D%22middle%22%3E%26%239888%3B%20C%C3%81MARA%20NO%20DISPONIBLE%20O%20DESCONECTADA%3C%2Ftext%3E%3C%2Fsvg%3E' }}
                 />
                 <div style={{ position: 'absolute', top: '15px', right: '15px', background: 'rgba(76, 175, 80, 0.9)', padding: '5px 15px', borderRadius: '20px', fontWeight: 'bold', fontSize: '0.8rem', boxShadow: '0 4px 10px rgba(0,0,0,0.5)' }}>
                   <i className="fa fa-circle" style={{ color: '#fff', fontSize: '8px', marginRight: '5px', animation: 'pulse 1.5s infinite' }}></i> EN VIVO
@@ -191,11 +194,11 @@ const DashboardView = ({ onLogout }) => {
               </div>
               
               <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-                <h3 style={{ fontSize: '1rem', marginBottom: '10px', color: 'var(--accent-teal)' }}>Metadatos de la IA</h3>
+                <h3 style={{ fontSize: '1rem', marginBottom: '10px', color: 'var(--accent-teal)' }}>Análisis de Vestimenta</h3>
                 {eventoSeleccionado.alerta ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.9rem' }}>
-                    <p style={{ margin: 0 }}><strong style={{ color: '#ff8a80' }}>Prendas Faltantes:</strong> {eventoSeleccionado.metadatos_ia.clases_faltantes.join(', ') || 'Desconocido'}</p>
-                    <p style={{ margin: 0 }}><strong>Rostros Detectados:</strong> {eventoSeleccionado.metadatos_ia.rostros_detectados}</p>
+                    <p style={{ margin: 0 }}><strong style={{ color: '#ff8a80' }}>Motivo de Alerta:</strong> Faltan prendas requeridas ({eventoSeleccionado.metadatos_ia.clases_faltantes.join(', ') || 'No identificadas'})</p>
+                    <p style={{ margin: 0 }}><strong>Personas en cuadro:</strong> {eventoSeleccionado.metadatos_ia.rostros_detectados}</p>
                   </div>
                 ) : (
                   <p style={{ margin: 0, fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)' }}>El estudiante cumplía con toda la normativa (Chaqueta/Uniforme, Pantalón Oscuro y Carnet).</p>

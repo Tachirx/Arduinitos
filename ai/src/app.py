@@ -209,10 +209,9 @@ class MotorVisionIA:
 
         if not self._captura.esta_abierta():
             log.error(
-                "No se pudo abrir la cámara (fuente: %d).",
+                "No se pudo abrir la cámara (fuente: %d). Operando en modo degradado (Sin señal).",
                 self._config.fuente_camara,
             )
-            return
 
         self._streamer.iniciar()
         log.info("Pipeline de video iniciado. Presiona 'q' para detener.")
@@ -230,12 +229,20 @@ class MotorVisionIA:
         while True:
             t_inicio = time.monotonic()
 
-            ret, frame = self._captura.leer()
-            if not ret or frame is None:
-                time.sleep(0.002)
-                continue
+            ret, frame = False, None
+            if self._captura and self._captura.esta_abierta():
+                ret, frame = self._captura.leer()
 
-            self._contador_frames += 1
+            if not ret or frame is None:
+                # Generar frame diagnóstico (Modo degradado)
+                frame = np.zeros((480, 640, 3), dtype=np.uint8)
+                cv2.putText(
+                    frame, "ERROR: SIN SENAL DE CAMARA", (40, 240),
+                    cv2.FONT_HERSHEY_DUPLEX, 1.0, (30, 30, 200), 2
+                )
+                time.sleep(1.0 / 15.0)  # FPS reducido en standby
+            else:
+                self._contador_frames += 1
 
             if self._contador_frames % self.SALTO_INFERENCIA == 0:
                 self._inferencia.enviar_frame(frame)
@@ -266,11 +273,8 @@ class MotorVisionIA:
 
             self._streamer.actualizar_frame(frame_renderizado)
 
-            cv2.imshow("UNEFA - Sistema de Validacion de Vestimenta", frame_renderizado)
-
-            if cv2.waitKey(1) & 0xFF == ord("q"):
-                log.info("Detenido por el usuario (tecla 'q').")
-                break
+            # Ejecución Headless: El renderizado visual ahora se maneja 
+            # de manera asíncrona a través del streamer MJPEG en el frontend.
 
             transcurrido = time.monotonic() - t_inicio
             tiempo_restante = _FRAME_INTERVAL - transcurrido
