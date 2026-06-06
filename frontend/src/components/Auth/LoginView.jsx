@@ -11,17 +11,8 @@ const LoginView = ({ isActive, navigateTo, onLogin }) => {
 
   // Formato automático de cédula
   const handleCedulaChange = (e) => {
-    let val = e.target.value.replace(/[^0-9VvEe\-]/g, '');
-    let prefix = 'V-';
-    if (val.toUpperCase().startsWith('E')) {
-      prefix = 'E-';
-    }
-    const digits = val.replace(/[^0-9]/g, '');
-    if (digits.length > 0) {
-      setCedula(prefix + digits);
-    } else {
-      setCedula(val.toUpperCase() === 'E' ? 'E-' : '');
-    }
+    // Permitimos cualquier entrada (texto libre) para que el usuario pueda usar tanto Cédula como Nombre de Usuario
+    setCedula(e.target.value);
   };
 
   const handleLogin = async (e) => {
@@ -59,10 +50,9 @@ const LoginView = ({ isActive, navigateTo, onLogin }) => {
             <input 
               type="text" 
               className={`input ${errorMsg ? 'error' : ''}`} 
-              placeholder="Ej: V-12345678" 
+              placeholder="Cédula o Nombre de usuario" 
               value={cedula}
               onChange={handleCedulaChange}
-              onFocus={() => { if(!cedula) setCedula('V-') }}
             />
           </div>
         </div>
