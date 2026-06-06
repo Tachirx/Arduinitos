@@ -24,8 +24,12 @@ const RegisterView = ({ isActive, navigateTo }) => {
 
   const handleCedulaChange = (e) => {
     let val = e.target.value.replace(/[^0-9VvEe\-]/g, '');
+    let prefix = 'V-';
+    if (val.toUpperCase().startsWith('E')) {
+      prefix = 'E-';
+    }
     const digits = val.replace(/[^0-9]/g, '');
-    setFormData(prev => ({ ...prev, cedula: digits.length > 0 ? 'V-' + digits : '' }));
+    setFormData(prev => ({ ...prev, cedula: digits.length > 0 ? prefix + digits : val.toUpperCase() === 'E' ? 'E-' : '' }));
   };
 
   const PREGUNTAS_OPCIONES = [
@@ -79,7 +83,7 @@ const RegisterView = ({ isActive, navigateTo }) => {
     const apellidoFinal = partesNombre.length > 1 ? partesNombre.slice(1).join(' ') : 'N/A';
 
     const payload = {
-      cedula: formData.cedula.replace('V-', ''),
+      cedula: formData.cedula,
       nombres: nombreFinal,
       apellidos: apellidoFinal,
       telefono: formData.telefono,

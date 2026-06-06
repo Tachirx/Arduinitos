@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import os
@@ -17,7 +17,7 @@ app = FastAPI(title="Backend Proyecto Visión")
 # Habilitar CORS para permitir peticiones desde el frontend React
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=["*"], # Permitimos todo para despliegue local
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -44,16 +44,40 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": "Error interno del servidor. El equipo ha sido notificado en logs."},
     )
 
-@app.get("/")
-def read_root():
-    log.info("Acceso a ruta raíz.")
-    return {"estado": "Backend en línea y preparado."}
-
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
 
+# Frontend Construido 
+ruta_frontend = os.path.join(ruta_directorio_base, "..", "frontend", "dist")
+if os.path.exists(ruta_frontend):
+    
+    app.mount("/assets", StaticFiles(directory=os.path.join(ruta_frontend, "assets")), name="frontend_assets")
+    
+    
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        
+        rutas_api = ["auth", "usuarios", "eventos", "almacenamiento", "health"]
+        if any(full_path.startswith(ruta) for ruta in rutas_api):
+            raise HTTPException(status_code=404, detail="API Route Not Found")
+            
+        index_path = os.path.join(ruta_frontend, "index.html")
+        public_file = os.path.join(ruta_frontend, full_path)
+        
+        
+        if os.path.isfile(public_file):
+            return FileResponse(public_file)
+            
+        if os.path.exists(index_path):
+            return FileResponse(index_path)
+        return {"estado": "Backend en línea. Frontend index.html no encontrado."}
+else:
+    @app.get("/")
+    def read_root():
+        log.info("Acceso a ruta raíz.")
+        return {"estado": "Backend en línea. Frontend no compilado (usa npm run build)."}
 
 if __name__ == "__main__":
-    log.info("Iniciando servicio Backend...")
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    log.info("Iniciando servicio Backend para producción local...")
+    uvicorn.run("main:app", host="0.0.0.0", port=8000)

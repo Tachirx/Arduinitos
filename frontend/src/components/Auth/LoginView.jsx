@@ -12,11 +12,15 @@ const LoginView = ({ isActive, navigateTo, onLogin }) => {
   // Formato automático de cédula
   const handleCedulaChange = (e) => {
     let val = e.target.value.replace(/[^0-9VvEe\-]/g, '');
+    let prefix = 'V-';
+    if (val.toUpperCase().startsWith('E')) {
+      prefix = 'E-';
+    }
     const digits = val.replace(/[^0-9]/g, '');
     if (digits.length > 0) {
-      setCedula('V-' + digits);
+      setCedula(prefix + digits);
     } else {
-      setCedula('');
+      setCedula(val.toUpperCase() === 'E' ? 'E-' : '');
     }
   };
 

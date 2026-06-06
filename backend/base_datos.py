@@ -19,8 +19,8 @@ DATABASE_URL_FULL = os.getenv("DATABASE_URL")
 if DATABASE_URL_FULL:
     DATABASE_URL = DATABASE_URL_FULL
 else:
-    # URL de conexión para MariaDB/MySQL por defecto
-    DATABASE_URL = f"mysql+pymysql://{USUARIO}:{CLAVE}@{HOST}:{PUERTO}/{NOMBRE_DB}"
+    # URL de conexión de respaldo (SQLite) por defecto si no existe archivo .env o configuración
+    DATABASE_URL = "sqlite:///./proyecto.db"
 
 # configuración específica para SQLite (POR SI LO USAN, evaluacion de lenguaje II pues)
 argumentos_motor = {}

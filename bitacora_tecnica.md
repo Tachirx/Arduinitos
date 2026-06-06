@@ -1,31 +1,4 @@
-# Bitácora Técnica de Desarrollo
-
-**[2026-04-15 22:10]**
-*   **Modulo:** IA — Especificación del Modelo
-*   **Resumen Técnico:** Sesión de levantamiento de requerimientos para definir las clases de detección del modelo YOLOv8. Se definieron 5 clases: `chemise_reglamentaria`, `pantalon_reglamentario`, `uniforme_deportivo`, `carnet_visible` y `rostro`. Se documentó la lógica de cumplimiento, el pipeline de procesamiento, el sistema de roles (Super Admin + Portero/Vigilante) y los lineamientos de dataset para el Grupo A. Archivo generado: `especificacion_modelo_ia.md` (NO subir a GitHub).
-
-**[2026-04-11 18:56]**
-*   **Modulo:** Arquitectura Global
-*   **Resumen Técnico:** Scaffolding inicializado para monorepo. Se establecieron las barreras de arquitectura entre Frontend (React), Backend (FastAPI Python), IA (YOLO) y Hardware (Arduino Serial). Se agregaron manejadores de excepciones globales y patrón de Logger central en capa Backend. Proyecto listo para que los sub-equipos empiecen a clonar/trabajar.
-**[2026-04-18 17:30]**
-*   **Modulo:** IA / Arquitectura
-*   **Resumen Técnico:** Alineación del proyecto con la versión corregida del reporte de Karla Se reestructuró la especificación de IA (`especificacion_modelo_ia.md`) reduciendo clases a 3 (`Uniforme_superior_reglamentario`, `Pantalon_oscuro`, `Carnet`) e integrando MediaPipe para privacidad. Se definió la Arquitectura Dirigida por Eventos (EDA) y la estrategia de alertas multi-capa. Creado Plan de Implementación formal para iniciar el desarrollo del motor de visión paralelo (será necesario python 3.12 por compatibilidad:). 
-
-**[2026-04-18 18:26]**
-*   **Modulo:** IA — Código Base (MVP)
-*   **Resumen Técnico:** Entorno de desarrollo preparado (Python 3.12.10 venv en `ai/venv/`, incompatibilidad con 3.14 para mediapipe). Dependencias instaladas: ultralytics 8.4.39, mediapipe 0.10.33, torch 2.11.0+cpu, opencv 4.13, httpx 0.28.1. Código base implementado en 4 archivos modulares: `configuracion.py` (parámetros centralizados), `detector.py` (inferencia YOLOv8n + censura MediaPipe), `alertas.py` (Filtro de Novedad + Capa Local winsound + Capa Red httpx), `app.py` (pipeline orquestador con HUD en pantalla). Imports verificados OK. Archivo `requirements.txt` generado.
-
-**[2026-05-08 00:55]**
-*   **Módulo:** Backend — Unificación de Usuarios y Autenticación
-*   **Resumen Técnico:** Consolidación de aportes de Miguel, Gladys y Héctor en un núcleo sólido. Se implementó el modelo `Usuario` centralizado con identificación por cédula única y soporte para 3 preguntas de seguridad. Se configuró la autenticación mediante JWT (HS256) con lógica de bloqueo temporal de 15 minutos tras 5 intentos fallidos. Estructura de archivos organizada en `base_datos.py`, `modelos.py`, `core/autenticacion.py` y `rutas/`. Se estableció el entorno virtual (`venv`) con dependencias verificadas (FastAPI, SQLAlchemy, PyMySQL, bcrypt 4.0.1). Pruebas de persistencia y seguridad validadas con éxito en SQLite/MariaDB.
-
-**[2026-05-16 20:45]**
-*   **Módulo:** IA — Análisis de ai-copia e Integración
-*   **Resumen Técnico:** Auditoría técnica detallada y comparativa arquitectónica de `ai - copia` frente al MVP síncrono activo en `ai`. Se identificaron mejoras críticas: ejecución asíncrona multihilo en pipeline desacoplado, muestreo adaptativo de frames, estabilización temporal por ventana y unificación con clases UNEFA (`chaqueta_unefa`). Se detectaron desalineaciones críticas de endpoint en FastAPI (`/eventos/ia` vs `/eventos/`) y falta de persistencia real de eventos en el backend. Se redactó un informe técnico detallado de recomendaciones de migración.
-
-**[2026-05-28 15:05]**
-*   **Módulo:** Frontend — Autenticación y Arquitectura
-*   **Resumen Técnico:** Migración exitosa de la maqueta Vanilla JS/HTML/CSS de Login hacia el entorno React (Vite) en `frontend`. Se componentizó el diseño en `AuthContainer`, `LoginView`, `RegisterView` y `ForgotView`, preservando fielmente los estilos Glassmorphism y la experiencia UX original. Se integró un servicio nativo (`authService.js`) conectándolo con los endpoints FastAPI. Se añadió temporalmente respuestas *hardcodeadas* a las preguntas de seguridad del registro para viabilizar pruebas E2E. En el Backend, se inyectó `CORSMiddleware` en `main.py` para permitir la comunicación cruzada con el frontend.
+# Bitácora Técnica
 
 **[2026-05-28 15:15]**
 *   **Módulo:** Integración Sistémica y Frontend Dashboard
@@ -35,39 +8,65 @@
 *   **Resumen Técnico:** Resolución de inconsistencias de integración de "vibe coding". Se purgó el historial Git de artefactos basura (`runs/`, `ai - copia/`, `Login/`) forzando reescritura de GitHub. En el Frontend, se implementó `react-router-dom` en `App.jsx` para protección de rutas, se configuró `.env` para desvincular hardcodeo de red y se inyectó el token JWT (`Authorization: Bearer`) en los endpoints del Dashboard. En Backend, se añadió la relación `ForeignKey` en `EventoVision.id_usuario_validador`. En IA, se completó la lógica en `EstabilizadorVentana.actualizar()` sobrescribiendo los campos dinámicamente con las proporciones suavizadas para reducir ruido temporal.
 
 **[2026-05-31 16:48]**
-*   **M�dulo:** IA & Frontend � Streaming H�brido MJPEG
-*   **Resumen T�cnico:** Implementaci�n de un micro-servidor de streaming de video MJPEG nativo (sin dependencias adicionales como Flask/FastAPI) embebido directamente en la capa de IA (streamer.py puerto 8001). Esto permite una **arquitectura h�brida**: el sistema sigue siendo guiado por eventos (eficiente) y guarda fotos de evidencias, pero el frontend ahora cuenta con un estado interactivo (erEnVivo) en React que carga una etiqueta <img> con el stream en vivo a petici�n del portero, mostrando el renderizado en tiempo real del HUD de diagn�stico sin saturar el ancho de banda innecesariamente.
+*   **Módulo:** IA & Frontend - Streaming Híbrido MJPEG
+*   **Resumen Técnico:** Implementación de un micro-servidor de streaming de video MJPEG nativo (sin dependencias adicionales como Flask/FastAPI) embebido directamente en la capa de IA (streamer.py puerto 8001). Esto permite una **arquitectura híbrida**: el sistema sigue siendo guiado por eventos (eficiente) y guarda fotos de evidencias, pero el frontend ahora cuenta con un estado interactivo (verEnVivo) en React que carga una etiqueta <img> con el stream en vivo a petición del portero, mostrando el renderizado en tiempo real del HUD de diagnóstico sin saturar el ancho de banda innecesariamente.
 
 
 **[2026-05-31 23:02]**
-*   **M�dulo:** Frontend (Estilos & Compilaci�n)
-*   **Resumen T�cnico:** Correcci�n de un error cr�tico de sintaxis CSS en \`frontend/src/styles/style.css\`. Se restaur� el selector \`.back-btn\` faltante antes de un bloque de propiedades que se encontraban hu�rfanas en la l�nea 330, lo cual produc�a un fallo de compilaci�n en \`lightningcss\` durante el proceso de empaquetado de Vite (\`npm run build\`). Posterior a la correcci�n, se valid� la compilaci�n exitosa tanto del Frontend en Vite (React) como del Backend y el Motor de IA en Python (mediante compilaci�n en seco \`py_compile\`), confirmando que la integridad sint�ctica de todo el sistema est� restablecida.
+*   **Módulo:** Frontend (Estilos & Compilación)
+*   **Resumen Técnico:** Corrección de un error crítico de sintaxis CSS en `frontend/src/styles/style.css`. Se restauró el selector `.back-btn` faltante antes de un bloque de propiedades que se encontraban huérfanas en la línea 330, lo cual producía un fallo de compilación en `lightningcss` durante el proceso de empaquetado de Vite (`npm run build`). Posterior a la corrección, se validó la compilación exitosa tanto del Frontend en Vite (React) como del Backend y el Motor de IA en Python (mediante compilación en seco `py_compile`), confirmando que la integridad sintáctica de todo el sistema está restablecida.
 
 **[2026-05-31 23:07]**
-*   **M�dulo:** Core (Arquitectura de Fallos y Servidor)
-*   **Resumen T�cnico:** 
-    1. **Resiliencia de C�mara:** Se modific� \`ai/src/app.py\` para operar en "modo degradado" en caso de no detectar una c�mara. En lugar de detener la ejecuci�n, el pipeline genera sint�ticamente frames negros con un aviso de error \`ERROR: SIN SENAL DE CAMARA\` y opera a 15 FPS para ahorrar CPU. El servidor de streaming as�ncrono se mantiene online evitando ca�das de servicio.
-    2. **Fallback Visual en Frontend:** Se implement� en \`DashboardView.jsx\` un render de error inline basado en data-URI SVG con la est�tica nativa de la app (evitando dependencias externas como via.placeholder.com).
-    3. **Base de Datos:** Se activ� temporalmente la base de datos de respaldo en SQLite agregando la variable \`DATABASE_URL=sqlite:///./proyecto.db\` en \`backend/.env\` debido a un error de operaci�n y autenticaci�n GSSAPI (\`auth_gssapi_client\`) persistente con la instancia local de MariaDB. Esto garantiza consistencia de esquema DDL mientras se evita el error 2059 de PyMySQL. Los 3 demonios (FastAPI, Vite, y Motor IA) han sido levantados localmente.
+*   **Módulo:** Core (Arquitectura de Fallos y Servidor)
+*   **Resumen Técnico:**
+    1. **Resiliencia de Cámara:** Se modificó `ai/src/app.py` para operar en "modo degradado" en caso de no detectar una cámara. En lugar de detener la ejecución, el pipeline genera sintéticamente frames negros con un aviso de error `ERROR: SIN SENAL DE CAMARA` y opera a 15 FPS para ahorrar CPU. El servidor de streaming asíncrono se mantiene online evitando caídas de servicio.
+    2. **Fallback Visual en Frontend:** Se implementó en `DashboardView.jsx` un render de error inline basado en data-URI SVG con la estética nativa de la app (evitando dependencias externas como via.placeholder.com).
+    3. **Base de Datos:** Se activó temporalmente la base de datos de respaldo en SQLite agregando la variable `DATABASE_URL=sqlite:///./proyecto.db` en `backend/.env` debido a un error de operación y autenticación GSSAPI (`auth_gssapi_client`) persistente con la instancia local de MariaDB. Esto garantiza consistencia de esquema DDL mientras se evita el error 2059 de PyMySQL. Los 3 demonios (FastAPI, Vite, y Motor IA) han sido levantados localmente.
 
 **[2026-05-31 23:11]**
-*   **M�dulo:** Core IA & Estabilidad
-*   **Resumen T�cnico:** 
-    1. **Ejecuci�n Headless:** Se elimin� la instanciaci�n de ventanas nativas del sistema operativo en OpenCV (\`cv2.imshow\` y \`cv2.waitKey\`) dentro de \`app.py\` para que el servicio opere 100% en segundo plano y as�ncrono, delegando toda responsabilidad de renderizado al Frontend a trav�s del \`streamer.py\`.
-    2. **Fallo de Tipo JSON:** Se mitig� un crash severo que deten�a el motor en el momento de detecci�n y env�o de un webhook (Error: \`Object of type float32 is not JSON serializable\`). Esto se solucion� en \`detector.py\` (L�neas 179-184) forzando el cast de los arrays NumPy \`conf\` y \`cx\` devueltos por YOLO a tipos flotantes nativos primitivos de Python (\`float()\`) justo antes de agregarlos al payload de las alertas.
+*   **Módulo:** Core IA & Estabilidad
+*   **Resumen Técnico:**
+    1. **Ejecución Headless:** Se eliminó la instanciación de ventanas nativas del sistema operativo en OpenCV (`cv2.imshow` y `cv2.waitKey`) dentro de `app.py` para que el servicio opere 100% en segundo plano y asíncrono, delegando toda responsabilidad de renderizado al Frontend a través del `streamer.py`.
+    2. **Fallo de Tipo JSON:** Se mitigó un crash severo que detenía el motor en el momento de detección y envío de un webhook (Error: `Object of type float32 is not JSON serializable`). Esto se solucionó en `detector.py` (Líneas 179-184) forzando el cast de los arrays NumPy `conf` y `cx` devueltos por YOLO a tipos flotantes nativos primitivos de Python (`float()`) justo antes de agregarlos al payload de las alertas.
 
 **[2026-05-31 23:15]**
-*   **M�dulo:** Core IA & Configurazione
-*   **Resumen T�cnico:** 
-    Se a�adi� flexibilidad a la detecci�n de fuentes de video. En \`ai/src/configuracion.py\`, la asignaci�n de la c�mara (\`fuente_camara\`) ahora se lee autom�ticamente a trav�s de \`os.environ.get("CAMERA_SOURCE", "0")\`. Esto mantiene la selecci�n autom�tica del hardware predeterminado de la laptop (ID 0) por defecto, pero habilita que administradores puedan forzar una c�mara USB externa inyectando simplemente \`CAMERA_SOURCE=1\` sin necesidad de alterar el c�digo de producci�n.
+*   **Módulo:** Core IA & Configuración
+*   **Resumen Técnico:**
+    Se añadió flexibilidad a la detección de fuentes de video. En `ai/src/configuracion.py`, la asignación de la cámara (`fuente_camara`) ahora se lee automáticamente a través de `os.environ.get("CAMERA_SOURCE", "0")`. Esto mantiene la selección automática del hardware predeterminado de la laptop (ID 0) por defecto, pero habilita que administradores puedan forzar una cámara USB externa inyectando simplemente `CAMERA_SOURCE=1` sin necesidad de alterar el código de producción.
 
 **[2026-05-31 23:19]**
-*   **M�dulo:** Frontend & UX (Dashboard)
-*   **Resumen T�cnico:** 
-    1. **Bug de Renderizado Solapado:** Se corrigi� un comportamiento no deseado en \`DashboardView.jsx\` donde el renderizado de la c�mara en vivo (\`verEnVivo === true\`) prevalec�a jer�rquicamente sobre la selecci�n de un evento hist�rico. Ahora, al invocar \`onClick\` sobre un registro, el estado de transmisi�n se detiene forzosamente (\`setVerEnVivo(false)\`) para priorizar la visualizaci�n de la evidencia fotogr�fica.
-    2. **Iteraci�n Sem�ntica:** Se modific� la jerga t�cnica en el panel de detalle de la IA (ej. "Metadatos de la IA" -> "An�lisis de Vestimenta", "Prendas Faltantes" -> "Motivo de Alerta", "Rostros Detectados" -> "Personas en cuadro") para garantizar un lenguaje de dise�o enfocado en la operaci�n del usuario final (personal de porter�a).
+*   **Módulo:** Frontend & UX (Dashboard)
+*   **Resumen Técnico:**
+    1. **Bug de Renderizado Solapado:** Se corrigió un comportamiento no deseado en `DashboardView.jsx` donde el renderizado de la cámara en vivo (`verEnVivo === true`) prevalecía jerárquicamente sobre la selección de un evento histórico. Ahora, al invocar `onClick` sobre un registro, el estado de transmisión se detiene forzosamente (`setVerEnVivo(false)`) para priorizar la visualización de la evidencia fotográfica.
+    2. **Iteración Semántica:** Se modificó la jerga técnica en el panel de detalle de la IA (ej. "Metadatos de la IA" -> "Análisis de Vestimenta", "Prendas Faltantes" -> "Motivo de Alerta", "Rostros Detectados" -> "Personas en cuadro") para garantizar un lenguaje de diseño enfocado en la operación del usuario final (personal de portería).
 
 **[2026-05-31 23:21]**
-*   **M�dulo:** Frontend (Optimizaci�n de Rendimiento y Memoria)
-*   **Resumen T�cnico:** 
-    Se mitig� un riesgo latente de fuga de memoria (Memory Leak) en el DOM provocado por el flujo continuo del WebSocket. En \`DashboardView.jsx\`, se implement� una estrategia de truncamiento circular (\`.slice(0, 100)\`) sobre el array de estado de \`eventos\`. Esto asegura que el cliente de React en la porter�a retenga un m�ximo de 100 nodos hist�ricos en pantalla de forma rotativa, garantizando un rendimiento estable y sin lag incluso tras sesiones ininterrumpidas de operaci�n 24/7.
+*   **Módulo:** Frontend (Optimización de Rendimiento y Memoria)
+*   **Resumen Técnico:**
+    Se mitigó un riesgo latente de fuga de memoria (Memory Leak) en el DOM provocado por el flujo continuo del WebSocket. En `DashboardView.jsx`, se implementó una estrategia de truncamiento circular (`.slice(0, 100)`) sobre el array de estado de `eventos`. Esto asegura que el cliente de React en la portería retenga un máximo de 100 nodos históricos en pantalla de forma rotativa, garantizando un rendimiento estable y sin lag incluso tras sesiones ininterrumpidas de operación 24/7.
+
+
+## [2026-06-02 15:40] - Despliegue Local Single-PC
+- Se refactorizó main.py del backend para servir los estáticos de Vite (dist), unificando todo en un solo puerto y eliminando el problema de CORS.
+- Se creó el script de orquestación local iniciar_sistema.bat para automatizar la inicialización.
+- Se validó la ejecución headless del módulo IA (StreamerLocal en puerto 8001).
+
+## [2026-06-05 22:27] fix: login fallaba por prefijo "V-" en cédula
+
+**Archivo modificado:** `frontend/src/components/Auth/LoginView.jsx`
+
+**Problema:** El formulario de registro limpiaba el prefijo `V-` de la cédula antes de enviarla al backend (`cedula.replace('V-', '')`), guardándola como `12345678`. El formulario de login NO hacía este limpiado y enviaba `V-12345678`. El backend buscaba la cédula tal cual en la BD, no la encontraba, y retornaba "Cédula o clave incorrecta".
+
+**Solución:** Se agregó `cedula.replace('V-', '').replace('v-', '')` en el handler de login antes de llamar al servicio de autenticación. Frontend recompilado.
+
+## [2026-06-05 23:58] - Autoconfiguración y Validación de Entornos Virtuales (VENV)
+
+**Archivo modificado:** `iniciar_sistema.bat`
+
+**Problema:** Al ejecutar el sistema en entornos locales limpios o con copias directas de directorios virtuales (`venv`), los scripts de activación fallaban debido a rutas absolutas hardcodeadas en los scripts internos (ej. `activate.bat` apuntando a directorios inexistentes de otra máquina). Esto obligaba al script de lote a usar un Python global que usualmente carecía de dependencias esenciales (como FastAPI o Ultralytics).
+
+**Solución:**
+1. Se integró una validación previa en `iniciar_sistema.bat` que confirma la existencia de Python en el PATH global.
+2. Se diseñó un flujo de saneamiento robusto con etiquetas `goto`. Si el entorno virtual de `ai/` o `backend/` no existe, o si la ejecución de prueba del intérprete local `venv\Scripts\python.exe` falla (confirmando que el entorno está corrupto, movido de directorio o copiado de otra computadora), el script elimina recursivamente el directorio `venv` roto.
+3. Se crea automáticamente el entorno virtual nativo local (`python -m venv venv`) y se instalan/actualizan de forma transparente las dependencias listadas en los respectivos archivos `requirements.txt`.
+4. Con esto, el sistema se autoconfigura al 100% en la máquina del desarrollador local sin necesidad de configuraciones previas manuales.
