@@ -31,8 +31,13 @@ class Token(BaseModel):
 
 @router.post("/registrar", response_model=Token, status_code=status.HTTP_201_CREATED)
 def registrar_usuario(datos: RegistroUsuario, db: Session = Depends(obtener_db)):
+    # Normalización estandarizada del usuario/cédula
+    cedula_limpia = datos.cedula.strip().upper()
+    if cedula_limpia.isdigit():
+        cedula_limpia = f"V-{cedula_limpia}"
+        
     # Verificar si ya existe el usuario
-    existente = db.query(Usuario).filter(Usuario.cedula == datos.cedula).first()
+    existente = db.query(Usuario).filter(Usuario.cedula == cedula_limpia).first()
     if existente:
         raise HTTPException(status_code=400, detail="La cédula ya se encuentra registrada.")
     
@@ -46,7 +51,7 @@ def registrar_usuario(datos: RegistroUsuario, db: Session = Depends(obtener_db))
         })
     
     nuevo_usuario = Usuario(
-        cedula=datos.cedula,
+        cedula=cedula_limpia,
         nombres=datos.nombres,
         apellidos=datos.apellidos,
         telefono=datos.telefono,
@@ -106,7 +111,11 @@ class RecuperarClave(BaseModel):
 
 @router.get("/preguntas/{cedula}")
 def obtener_preguntas(cedula: str, db: Session = Depends(obtener_db)):
-    usuario = db.query(Usuario).filter(Usuario.cedula == cedula).first()
+    cedula_limpia = cedula.strip().upper()
+    if cedula_limpia.isdigit():
+        cedula_limpia = f"V-{cedula_limpia}"
+        
+    usuario = db.query(Usuario).filter(Usuario.cedula == cedula_limpia).first()
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     
@@ -115,7 +124,11 @@ def obtener_preguntas(cedula: str, db: Session = Depends(obtener_db)):
 
 @router.post("/recuperar_clave")
 def recuperar_clave(datos: RecuperarClave, db: Session = Depends(obtener_db)):
-    usuario = db.query(Usuario).filter(Usuario.cedula == datos.cedula).first()
+    cedula_limpia = datos.cedula.strip().upper()
+    if cedula_limpia.isdigit():
+        cedula_limpia = f"V-{cedula_limpia}"
+        
+    usuario = db.query(Usuario).filter(Usuario.cedula == cedula_limpia).first()
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     

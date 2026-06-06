@@ -23,13 +23,8 @@ const RegisterView = ({ isActive, navigateTo }) => {
   };
 
   const handleCedulaChange = (e) => {
-    let val = e.target.value.replace(/[^0-9VvEe\-]/g, '');
-    let prefix = 'V-';
-    if (val.toUpperCase().startsWith('E')) {
-      prefix = 'E-';
-    }
-    const digits = val.replace(/[^0-9]/g, '');
-    setFormData(prev => ({ ...prev, cedula: digits.length > 0 ? prefix + digits : val.toUpperCase() === 'E' ? 'E-' : '' }));
+    // Permitir ingreso de texto libre (cédula o usuario). El backend se encargará de normalizarlo.
+    setFormData(prev => ({ ...prev, cedula: e.target.value }));
   };
 
   const PREGUNTAS_OPCIONES = [
@@ -123,7 +118,7 @@ const RegisterView = ({ isActive, navigateTo }) => {
           <label className="form-label">CÉDULA</label>
           <div className="input-wrap">
             <i className="fa fa-id-card input-icon"></i>
-            <input type="text" className="input" name="cedula" value={formData.cedula} onChange={handleCedulaChange} onFocus={() => { if(!formData.cedula) handleChange({target:{name:'cedula', value:'V-'}}) }} placeholder="Ej: V-12345678" required />
+            <input type="text" className="input" name="cedula" value={formData.cedula} onChange={handleCedulaChange} placeholder="Cédula o Nombre de usuario" required />
           </div>
         </div>
 
