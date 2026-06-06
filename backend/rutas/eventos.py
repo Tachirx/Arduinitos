@@ -55,9 +55,22 @@ class DatosEventoIA(BaseModel):
     evidencia_b64: str
 
 @router.get("/")
-def listar_eventos(db: Session = Depends(obtener_db), usuario: Usuario = Depends(obtener_usuario_actual)):
-    """Lista todos los eventos de visión registrados en el sistema ordenados por fecha."""
-    return db.query(EventoVision).order_by(EventoVision.fecha.desc()).limit(100).all()
+def listar_eventos(
+    skip: int = 0, 
+    limit: int = 30, 
+    db: Session = Depends(obtener_db), 
+    usuario: Usuario = Depends(obtener_usuario_actual)
+):
+    """Lista los eventos de visión registrados en el sistema con soporte para paginación."""
+    total_eventos = db.query(EventoVision).count()
+    eventos = db.query(EventoVision).order_by(EventoVision.fecha.desc()).offset(skip).limit(limit).all()
+    
+    return {
+        "total": total_eventos,
+        "skip": skip,
+        "limit": limit,
+        "data": eventos
+    }
 
 @router.post("/")
 def registrar_evento(evento: dict, db: Session = Depends(obtener_db)):
