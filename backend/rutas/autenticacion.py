@@ -64,7 +64,13 @@ def registrar_usuario(datos: RegistroUsuario, db: Session = Depends(obtener_db))
 
 @router.post("/iniciar_sesion", response_model=Token)
 def iniciar_sesion(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(obtener_db)):
-    usuario = db.query(Usuario).filter(Usuario.cedula == form_data.username).first()
+    usuario_ingresado = form_data.username.strip()
+    
+    # Truco UX: Si ingresaron solo números, asumimos por defecto que es una cédula venezolana
+    if usuario_ingresado.isdigit():
+        usuario_ingresado = f"V-{usuario_ingresado}"
+        
+    usuario = db.query(Usuario).filter(Usuario.cedula == usuario_ingresado).first()
     
     if not usuario:
         raise HTTPException(status_code=401, detail="Cédula o clave incorrecta")

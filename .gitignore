@@ -1,9 +1,9 @@
 # General
-.env
 .DS_Store
 *.log
 logs/
 especificacion_modelo_ia.md
+bitacora_tecnica.md
 
 # Backend & IA (Python)
 __pycache__/
@@ -18,7 +18,6 @@ env/
 .vscode/
 
 # Models & Data (IA)
-*.pt
 *.onnx
 data/raw/
 data/processed/
