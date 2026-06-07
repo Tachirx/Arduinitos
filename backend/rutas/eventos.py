@@ -54,21 +54,47 @@ class DatosEventoIA(BaseModel):
     rostros_detectados: int
     evidencia_b64: str
 
+@router.get("/stats")
+def obtener_estadisticas(db: Session = Depends(obtener_db), usuario: Usuario = Depends(obtener_usuario_actual)):
+    """Obtiene los KPIs globales y del día para el dashboard."""
+    inicio_dia = datetime.combine(datetime.utcnow().date(), datetime.min.time())
+    
+    total = db.query(EventoVision).count()
+    eventos_hoy = db.query(EventoVision.alerta).filter(EventoVision.fecha >= inicio_dia).all()
+    
+    alertas_hoy = sum(1 for e in eventos_hoy if e[0])
+    accesos_ok_hoy = sum(1 for e in eventos_hoy if not e[0])
+    
+    return {
+        "totalRegistros": total,
+        "alertasHoy": alertas_hoy,
+        "accesosOkHoy": accesos_ok_hoy
+    }
+
 @router.get("/")
 def listar_eventos(
     skip: int = 0, 
-    limit: int = 30, 
+    limit: int = 30,
+    tipo: str = "todos",
     db: Session = Depends(obtener_db), 
     usuario: Usuario = Depends(obtener_usuario_actual)
 ):
-    """Lista los eventos de visión registrados en el sistema con soporte para paginación."""
-    total_eventos = db.query(EventoVision).count()
-    eventos = db.query(EventoVision).order_by(EventoVision.fecha.desc()).offset(skip).limit(limit).all()
+    """Lista los eventos de visión registrados en el sistema con soporte para paginación y filtros reales de base de datos."""
+    query = db.query(EventoVision)
+    
+    if tipo == "alerta":
+        query = query.filter(EventoVision.alerta == True)
+    elif tipo == "ok":
+        query = query.filter(EventoVision.alerta == False)
+        
+    total_eventos = query.count()
+    eventos = query.order_by(EventoVision.fecha.desc()).offset(skip).limit(limit).all()
     
     return {
         "total": total_eventos,
         "skip": skip,
         "limit": limit,
+        "tipo": tipo,
         "data": eventos
     }
 

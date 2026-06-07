@@ -70,3 +70,13 @@
 2. Se diseñó un flujo de saneamiento robusto con etiquetas `goto`. Si el entorno virtual de `ai/` o `backend/` no existe, o si la ejecución de prueba del intérprete local `venv\Scripts\python.exe` falla (confirmando que el entorno está corrupto, movido de directorio o copiado de otra computadora), el script elimina recursivamente el directorio `venv` roto.
 3. Se crea automáticamente el entorno virtual nativo local (`python -m venv venv`) y se instalan/actualizan de forma transparente las dependencias listadas en los respectivos archivos `requirements.txt`.
 4. Con esto, el sistema se autoconfigura al 100% en la máquina del desarrollador local sin necesidad de configuraciones previas manuales.
+
+## [2026-06-06 09:15] - Estandarización Sistémica, UX y Paginación
+
+**Archivos modificados:** `iniciar_sistema.bat`, `frontend/src/components/Auth/LoginView.jsx`, `frontend/src/components/Auth/RegisterView.jsx`, `backend/rutas/autenticacion.py`, `backend/rutas/eventos.py`, `.gitignore`
+
+**Resumen Técnico:**
+1. **Infraestructura (Batch):** Se mitigó un cierre súbito (crash) de la consola de Windows al eliminar paréntesis no escapados en una instrucción `echo` dentro de un bloque condicional en `iniciar_sistema.bat`.
+5. **Endpoint de Estadísticas (KPIs Reales):** Se detectó un error matemático crítico introducido por la paginación donde los KPIs del frontend solo contabilizaban los elementos de la página actual. Se solucionó creando un nuevo endpoint en base de datos `GET /eventos/stats` para computar los totales diarios y absolutos de forma nativa en SQL (`count()` y `filter()`).
+6. **Server-Side Filtering y JWT Estricto:** Se corrigió el equipo de frontend migrando el filtrado visual de JavaScript en el cliente a consultas reales en el backend mediante query params (`?tipo=alerta`), lo que garantiza la integridad de las búsquedas en las páginas antiguas. También se fortificó `App.jsx` para que valide el JWT consultando al backend, en lugar de revisar únicamente la fecha de caducidad.
+7. **Fusión de Interfaces (Merge Frontend):** Se eliminó de manera segura la carpeta de código obsoleto (`frontend/src`) y se inyectó la nueva versión desarrollada por el equipo de diseño (originalmente en `frontend2`), conservando el árbol local de dependencias `node_modules` para evitar recargas completas. El proyecto está estandarizado, acoplado y optimizado para el despliegue.
