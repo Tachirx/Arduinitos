@@ -1,4 +1,5 @@
 @echo off
+cd /d "%~dp0"
 title Sistema de Vision Artificial - Local
 color 0A
 

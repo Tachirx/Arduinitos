@@ -80,3 +80,13 @@
 5. **Endpoint de Estadísticas (KPIs Reales):** Se detectó un error matemático crítico introducido por la paginación donde los KPIs del frontend solo contabilizaban los elementos de la página actual. Se solucionó creando un nuevo endpoint en base de datos `GET /eventos/stats` para computar los totales diarios y absolutos de forma nativa en SQL (`count()` y `filter()`).
 6. **Server-Side Filtering y JWT Estricto:** Se corrigió el equipo de frontend migrando el filtrado visual de JavaScript en el cliente a consultas reales en el backend mediante query params (`?tipo=alerta`), lo que garantiza la integridad de las búsquedas en las páginas antiguas. También se fortificó `App.jsx` para que valide el JWT consultando al backend, en lugar de revisar únicamente la fecha de caducidad.
 7. **Fusión de Interfaces (Merge Frontend):** Se eliminó de manera segura la carpeta de código obsoleto (`frontend/src`) y se inyectó la nueva versión desarrollada por el equipo de diseño (originalmente en `frontend2`), conservando el árbol local de dependencias `node_modules` para evitar recargas completas. El proyecto está estandarizado, acoplado y optimizado para el despliegue.
+
+## [2026-06-10 07:58] fix: errores de despliegue inicial (main.py y pyserial)
+
+**Archivos modificados:** `iniciar_sistema.bat`, `backend/requirements.txt`
+
+**Problema:** Al descargar el proyecto y ejecutar el script `iniciar_sistema.bat` desde ciertos entornos (o ejecutándolo como administrador o con doble clic desde accesos directos), el directorio de trabajo (CWD) no correspondía a la raíz del proyecto. Esto ocasionaba que la navegación a la subcarpeta `backend` fallara, resultando en que no se encontrara `main.py`. Además, la librería `pyserial` (usada en `backend/core/hardware.py` para la placa Arduino) faltaba en el `requirements.txt`.
+
+**Solución:**
+1. Se añadió el comando `cd /d "%~dp0"` al inicio de `iniciar_sistema.bat` para asegurar que siempre se posicione en el directorio donde reside el propio script, garantizando consistencia en las rutas relativas.
+2. Se inyectó la dependencia `pyserial>=3.5` en `backend/requirements.txt` logrando su instalación automática al reconstruirse el entorno virtual (`venv`).
