@@ -90,3 +90,11 @@
 **Solución:**
 1. Se añadió el comando `cd /d "%~dp0"` al inicio de `iniciar_sistema.bat` para asegurar que siempre se posicione en el directorio donde reside el propio script, garantizando consistencia en las rutas relativas.
 2. Se inyectó la dependencia `pyserial>=3.5` en `backend/requirements.txt` logrando su instalación automática al reconstruirse el entorno virtual (`venv`).
+
+## [2026-06-10 11:47] fix: error de compilación de frontend en dashboard.css
+
+**Archivo modificado:** `frontend/src/styles/dashboard.css`
+
+**Problema:** El comando `npm run build` fallaba debido a un error de sintaxis reportado por `lightningcss` (`Invalid token in pseudo element: WhiteSpace`). Se identificó un bloque de propiedades huérfanas debajo del selector `.badge-live__dot` en `dashboard.css`.
+
+**Solución:** Se corrigió el bloque CSS huérfano añadiendo el selector faltante `.badge-alert`, lo cual permitió que la compilación de Vite finalizara exitosamente. El proyecto ahora compila y está listo para producción.

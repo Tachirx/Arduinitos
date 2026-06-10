@@ -470,6 +470,8 @@
 }
 
 .badge-live__dot { font-size: 8px; margin-right: 5px; }
+
+.badge-alert {
   position: absolute;
   top: 15px;
   right: 15px;
