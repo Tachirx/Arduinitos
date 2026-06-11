@@ -107,10 +107,10 @@ class EstabilizadorVentana:
         for t in self._personas_trackeadas:
             t["edad"] += 1
 
-        estabilizado = ResultadoDeteccion(estudiantes=resultado.estudiantes)
+        estabilizado = ResultadoDeteccion(estudiantes=[])
         
-        for est in estabilizado.estudiantes:
-            # Buscar track más cercano (Tracking 1D)
+        # Procesar detecciones crudas del frame actual
+        for est in resultado.estudiantes:
             track_match = None
             min_dist = 9999
             for t in self._personas_trackeadas:
@@ -122,21 +122,32 @@ class EstabilizadorVentana:
             if track_match:
                 track_match["edad"] = 0
                 track_match["cx"] = est.centro_x
+                track_match["box"] = (est.x1, est.y1, est.x2, est.y2)
                 for c in self._CAMPOS:
                     track_match["hist"][c].append(int(getattr(est, c)))
             else:
                 track_match = {
                     "cx": est.centro_x,
                     "edad": 0,
+                    "box": (est.x1, est.y1, est.x2, est.y2),
                     "hist": {c: deque([int(getattr(est, c))], maxlen=self._ventana) for c in self._CAMPOS}
                 }
                 self._personas_trackeadas.append(track_match)
                 
-            # Calcular proporción y estabilizar los campos de este estudiante
-            for c in self._CAMPOS:
-                hist = track_match["hist"][c]
-                proporcion = sum(hist) / len(hist)
-                setattr(est, c, proporcion >= self._fraccion)
+        # Reconstruir la escena desde la memoria del Tracker
+        for t in self._personas_trackeadas:
+            if t["edad"] < 5:  # Tolerar hasta 5 frames "ciegos" de YOLO
+                x1, y1, x2, y2 = t["box"]
+                nuevo_est = EstudianteDetectado(
+                    x1=x1, y1=y1, x2=x2, y2=y2, centro_x=t["cx"]
+                )
+                for c in self._CAMPOS:
+                    hist = t["hist"][c]
+                    # Si el historial tiene pocos elementos, confiaremos en lo poco que tenemos
+                    if len(hist) > 0:
+                        proporcion = sum(hist) / len(hist)
+                        setattr(nuevo_est, c, proporcion >= self._fraccion)
+                estabilizado.estudiantes.append(nuevo_est)
 
         # Limpiar tracks de personas que salieron de la cámara (>5 frames ausentes)
         self._personas_trackeadas = [t for t in self._personas_trackeadas if t["edad"] < 5]
@@ -176,8 +187,15 @@ class DetectorVestimenta:
     def inferir(self, frame: np.ndarray) -> ResultadoDeteccion:
         umbral_yolo = min(_UMBRALES_POR_CLASE.values())
 
+        # Preprocesamiento de iluminación adaptativa para YOLO
+        brillo_promedio = np.mean(frame)
+        frame_yolo = frame
+        if brillo_promedio < 85:
+            # Multiplica canales para forzar contraste e ilumina las sombras
+            frame_yolo = cv2.convertScaleAbs(frame, alpha=1.35, beta=35)
+
         resultados = self._modelo(
-            frame,
+            frame_yolo,
             conf=umbral_yolo,
             imgsz=640,
             verbose=False,
