@@ -300,7 +300,7 @@ class CensorPrivacidad:
                 gris,
                 scaleFactor=1.3,
                 minNeighbors=5,
-                minSize=(40, 40),
+                minSize=(20, 20),
                 flags=cv2.CASCADE_SCALE_IMAGE,
             )
 
