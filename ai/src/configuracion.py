@@ -40,8 +40,8 @@ class ConfiguracionIA:
     salto_inferencia: int = 3
     salto_censor: int = 6
     workers_yolo: int = 0
-    ventana_estabilizacion: int = 12
-    fraccion_estabilizacion: float = 0.55
+    ventana_estabilizacion: int = 8
+    fraccion_estabilizacion: float = 0.45
 
     # --- Backend ---
     url_backend: str = "http://localhost:8000"

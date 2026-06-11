@@ -295,7 +295,8 @@ class MotorVisionIA:
                 "ALERTA: Escena con incumplimiento detectado. Notificación enviada."
             )
         else:
-            log.info("Estado: Cumplimiento verificado globalmente.")
+            self._notificador.enviar_evento(resultado, frame_censurado)
+            log.info("Estado: Cumplimiento verificado. Notificación de acceso OK enviada.")
 
     def _dibujar_hud(
         self,

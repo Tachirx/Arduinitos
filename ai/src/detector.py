@@ -82,10 +82,10 @@ class ResultadoDeteccion:
 
 
 _UMBRALES_POR_CLASE: dict[str, float] = {
-    "carnet": 0.65,
-    "chaqueta_unefa": 0.65,
-    "pantalon_oscuro": 0.65,
-    "uniforme_superior": 0.65,
+    "carnet": 0.45,
+    "chaqueta_unefa": 0.60,
+    "pantalon_oscuro": 0.60,
+    "uniforme_superior": 0.60,
 }
 
 class EstabilizadorVentana:
@@ -99,28 +99,50 @@ class EstabilizadorVentana:
     def __init__(self, ventana: int = 12, fraccion_minima: float = 0.55) -> None:
         self._ventana = ventana
         self._fraccion = fraccion_minima
-        self._historiales: dict[str, deque] = {
-            campo: deque(maxlen=ventana) for campo in self._CAMPOS
-        }
         self._historial_rostros: deque = deque(maxlen=ventana)
+        self._personas_trackeadas: list[dict] = []
 
     def actualizar(self, resultado: ResultadoDeteccion) -> ResultadoDeteccion:
-        for campo in self._CAMPOS:
-            self._historiales[campo].append(int(getattr(resultado, campo)))
-        self._historial_rostros.append(resultado.rostros_detectados)
+        # Envejecer tracks para limpiar los que ya no están en escena
+        for t in self._personas_trackeadas:
+            t["edad"] += 1
 
         estabilizado = ResultadoDeteccion(estudiantes=resultado.estudiantes)
         
-        # Copiar y promediar estados globales estabilizados para alertas generales
-        for campo in self._CAMPOS:
-            hist = self._historiales[campo]
-            if len(hist) == 0:
-                continue
-            proporcion = sum(hist) / len(hist)
-            estado_estabilizado = proporcion >= self._fraccion
-            for est in estabilizado.estudiantes:
-                setattr(est, campo, estado_estabilizado)
+        for est in estabilizado.estudiantes:
+            # Buscar track más cercano (Tracking 1D)
+            track_match = None
+            min_dist = 9999
+            for t in self._personas_trackeadas:
+                dist = abs(t["cx"] - est.centro_x)
+                if dist < 160 and dist < min_dist:
+                    min_dist = dist
+                    track_match = t
+                    
+            if track_match:
+                track_match["edad"] = 0
+                track_match["cx"] = est.centro_x
+                for c in self._CAMPOS:
+                    track_match["hist"][c].append(int(getattr(est, c)))
+            else:
+                track_match = {
+                    "cx": est.centro_x,
+                    "edad": 0,
+                    "hist": {c: deque([int(getattr(est, c))], maxlen=self._ventana) for c in self._CAMPOS}
+                }
+                self._personas_trackeadas.append(track_match)
+                
+            # Calcular proporción y estabilizar los campos de este estudiante
+            for c in self._CAMPOS:
+                hist = track_match["hist"][c]
+                proporcion = sum(hist) / len(hist)
+                setattr(est, c, proporcion >= self._fraccion)
 
+        # Limpiar tracks de personas que salieron de la cámara (>5 frames ausentes)
+        self._personas_trackeadas = [t for t in self._personas_trackeadas if t["edad"] < 5]
+
+        # Estabilización de rostros se mantiene global
+        self._historial_rostros.append(resultado.rostros_detectados)
         if self._historial_rostros:
             valores = sorted(self._historial_rostros)
             n = len(valores)
@@ -129,8 +151,7 @@ class EstabilizadorVentana:
         return estabilizado
 
     def reiniciar(self) -> None:
-        for hist in self._historiales.values():
-            hist.clear()
+        self._personas_trackeadas.clear()
         self._historial_rostros.clear()
 
 
@@ -158,7 +179,7 @@ class DetectorVestimenta:
         resultados = self._modelo(
             frame,
             conf=umbral_yolo,
-            imgsz=480,
+            imgsz=640,
             verbose=False,
         )
         resultado = ResultadoDeteccion()
@@ -197,8 +218,8 @@ class DetectorVestimenta:
             for grupo in grupos:
                 # Centro horizontal promedio del grupo actual, verificar esto xfa
                 centro_grupo = sum(g["cx"] for g in grupo) / len(grupo)
-                # Agrupar si están a menos de 110 píxeles de distancia horizontal
-                if abs(obj["cx"] - centro_grupo) < 110:
+                # Agrupar si están a menos de 160 píxeles de distancia horizontal
+                if abs(obj["cx"] - centro_grupo) < 160:
                     grupo.append(obj)
                     agrupado = True
                     break
