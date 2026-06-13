@@ -940,35 +940,53 @@ body {
 }
 
 .site-footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
   text-align: center;
-  font-size: .65rem;
-  color: rgba(255,255,255,.25);
-  padding: 10px;
+  font-size: .75rem;
+  color: rgba(255, 255, 255, .45);
   letter-spacing: .04em;
-  z-index: 5;
+  z-index: 10;
+  white-space: nowrap;
 }
 
 /* ── RESPONSIVE ───────────────────────── */
 @media (max-width: 780px) {
   .card { flex-direction: column; border-radius: var(--radius-lg); }
   .card__left { flex: none; padding: 32px 24px; border-right: none; border-bottom: 1px solid rgba(212,168,67,.18); }
-  .logo-placeholder, .logo { width: 100px; height: 100px; }
+  .logo-placeholder { width: 100px; height: 100px; }
+  .logo { width: 100px; height: auto; }
   .logo-ring--outer { width: 118px; height: 118px; }
   .logo-ring--inner { width: 82px; height: 82px; }
   .brand-name { font-size: 1.8rem; }
   .brand-full, .brand-sub { display: none; }
   .card__divider { display: none; }
-  .card__right { min-height: 480px; }
+  .card__right { min-height: 520px; }
   .view { padding: 24px 22px; }
+  #viewLogin { padding: 24px 22px; }
   .form-grid { grid-template-columns: 1fr; }
   .form-group--full { grid-column: 1; }
+  
+  .site-footer {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    transform: none;
+    margin-top: 30px;
+    padding: 12px 16px;
+    font-size: .70rem;
+    color: rgba(255, 255, 255, .35);
+    white-space: normal;
+    text-align: center;
+    width: 100%;
+  }
 }
 
 @media (max-width: 480px) {
   .main-wrapper { padding: 12px; }
   .view { padding: 24px 18px; }
+  #viewLogin { padding: 24px 18px; }
+  .card__right { min-height: 560px; }
 }

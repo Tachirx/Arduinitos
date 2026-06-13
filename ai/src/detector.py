@@ -81,13 +81,6 @@ class ResultadoDeteccion:
         return all(est.uniforme_superior for est in self.estudiantes) if self.estudiantes else False
 
 
-_UMBRALES_POR_CLASE: dict[str, float] = {
-    "carnet": 0.45,
-    "chaqueta_unefa": 0.60,
-    "pantalon_oscuro": 0.60,
-    "uniforme_superior": 0.60,
-}
-
 class EstabilizadorVentana:
     _CAMPOS = [
         "carnet",
@@ -172,30 +165,32 @@ class DetectorVestimenta:
         ruta_modelo: str,
         umbral_confianza: float,
         clases_objetivo: dict,
+        umbrales_clases: dict[str, float] = None,
     ) -> None:
         self._modelo = YOLO(ruta_modelo)
         self._modelo.fuse()
         self._umbral_base = umbral_confianza
         self._clases = clases_objetivo
+        self._umbrales_clases = umbrales_clases or {}
         log.info(
-            "Modelo YOLO cargado y fusionado: %s | Umbral base: %s | Umbrales por clase: %s",
+            "Modelo YOLO cargado y fusionado: %s | Umbral base: %s | Umbrales dinamicos: %s",
             ruta_modelo,
             self._umbral_base,
-            _UMBRALES_POR_CLASE,
+            self._umbrales_clases,
         )
 
-    def inferir(self, frame: np.ndarray) -> ResultadoDeteccion:
-        umbral_yolo = min(_UMBRALES_POR_CLASE.values())
+    def inferir(self, cuadro: np.ndarray) -> ResultadoDeteccion:
+        umbral_yolo = min(self._umbrales_clases.values()) if self._umbrales_clases else self._umbral_base
 
         # Preprocesamiento de iluminación adaptativa para YOLO
-        brillo_promedio = np.mean(frame)
-        frame_yolo = frame
+        brillo_promedio = np.mean(cuadro)
+        cuadro_yolo = cuadro
         if brillo_promedio < 85:
             # Multiplica canales para forzar contraste e ilumina las sombras
-            frame_yolo = cv2.convertScaleAbs(frame, alpha=1.35, beta=35)
+            cuadro_yolo = cv2.convertScaleAbs(cuadro, alpha=1.35, beta=35)
 
         resultados = self._modelo(
-            frame_yolo,
+            cuadro_yolo,
             conf=umbral_yolo,
             imgsz=640,
             verbose=False,
@@ -213,7 +208,8 @@ class DetectorVestimenta:
         objetos = []
         for clase_id, confianza, coords in zip(cls_array, conf_array, xyxy_array):
             nombre = self._clases.get(clase_id)
-            if nombre and confianza >= _UMBRALES_POR_CLASE.get(nombre, 0.65):
+            umbral_especifico = self._umbrales_clases.get(nombre, self._umbral_base)
+            if nombre and confianza >= umbral_especifico:
                 x1, y1, x2, y2 = coords
                 cx = float((x1 + x2) / 2)
                 objetos.append({
@@ -227,16 +223,13 @@ class DetectorVestimenta:
             return resultado
 
         # --- Algoritmo de Clustering Espacial 1D por Proximidad Horizontal ---
-        #  objetos detectados de izquierda a derecha por coordenada X central
         objetos_ordenados = sorted(objetos, key=lambda x: x["cx"])
         grupos: list[list[dict]] = []
 
         for obj in objetos_ordenados:
             agrupado = False
             for grupo in grupos:
-                # Centro horizontal promedio del grupo actual, verificar esto xfa
                 centro_grupo = sum(g["cx"] for g in grupo) / len(grupo)
-                # Agrupar si están a menos de 160 píxeles de distancia horizontal
                 if abs(obj["cx"] - centro_grupo) < 160:
                     grupo.append(obj)
                     agrupado = True
@@ -246,7 +239,6 @@ class DetectorVestimenta:
 
         # --- Instanciar EstudianteDetectado por cada grupo ---
         for grupo in grupos:
-            # Calcular la caja envolvente que unifica todas las prendas de la persona
             x1_env = min(g["coords"][0] for g in grupo)
             y1_env = min(g["coords"][1] for g in grupo)
             x2_env = max(g["coords"][2] for g in grupo)
@@ -261,7 +253,6 @@ class DetectorVestimenta:
                 centro_x=centro_x_env
             )
 
-            # Asignar los elementos detectados al estudiante
             for g in grupo:
                 setattr(estudiante, g["nombre"], True)
                 estudiante.confianzas[g["nombre"]] = g["conf"]
@@ -270,11 +261,23 @@ class DetectorVestimenta:
 
         return resultado
 
+
 class CensorPrivacidad:
-    def __init__(self, intensidad_blur: int = 51) -> None:
+    def __init__(
+        self, 
+        intensidad_blur: int = 51,
+        escala_redimension: float = 0.5,
+        factor_escala: float = 1.1,
+        vecinos_minimos: int = 4,
+        tamano_minimo: tuple[int, int] = (15, 15)
+    ) -> None:
         self._intensidad = (
             intensidad_blur if intensidad_blur % 2 != 0 else intensidad_blur + 1
         )
+        self._escala_redimension = escala_redimension
+        self._factor_escala = factor_escala
+        self._vecinos_minimos = vecinos_minimos
+        self._tamano_minimo = tamano_minimo
         self._detector_rostros = cv2.CascadeClassifier(
             cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
         )
@@ -283,50 +286,65 @@ class CensorPrivacidad:
 
         self._regiones_cache: list[tuple[int, int, int, int]] = []
         self._cantidad_cache: int = 0
-        log.info("OpenCV Face Detection iniciado | Blur kernel: %d", self._intensidad)
+        log.info("OpenCV Face Detection iniciado | Blur kernel: %d | Escala: %.2f", self._intensidad, self._escala_redimension)
 
-    def censurar_rostros(
-        self, frame: np.ndarray, recalcular: bool = True
-    ) -> tuple[np.ndarray, int]:
-        frame_salida = frame.copy()
-        alto, ancho = frame.shape[:2]
+    def detectar_regiones_rostros(self, cuadro: np.ndarray) -> tuple[list[tuple[int, int, int, int]], int]:
+        alto, ancho = cuadro.shape[:2]
 
-        if recalcular:
-            pequeno = cv2.resize(frame, (ancho // 3, alto // 3))
-            gris = cv2.cvtColor(pequeno, cv2.COLOR_BGR2GRAY)
-            gris = cv2.equalizeHist(gris)
+        ancho_proc = int(ancho * self._escala_redimension)
+        alto_proc = int(alto * self._escala_redimension)
+        
+        if self._escala_redimension != 1.0:
+            pequeno = cv2.resize(cuadro, (ancho_proc, alto_proc))
+        else:
+            pequeno = cuadro
 
-            rostros = self._detector_rostros.detectMultiScale(
-                gris,
-                scaleFactor=1.3,
-                minNeighbors=5,
-                minSize=(20, 20),
-                flags=cv2.CASCADE_SCALE_IMAGE,
-            )
+        gris = cv2.cvtColor(pequeno, cv2.COLOR_BGR2GRAY)
+        gris = cv2.equalizeHist(gris)
 
-            nuevas_regiones: list[tuple[int, int, int, int]] = []
-            if len(rostros) > 0:
-                for x, y, w, h in rostros:
-                    x1 = x * 3
-                    y1 = y * 3
-                    x2 = min((x + w) * 3, ancho)
-                    y2 = min((y + h) * 3, alto)
-                    if x2 > x1 and y2 > y1:
-                        nuevas_regiones.append((x1, y1, x2, y2))
+        rostros = self._detector_rostros.detectMultiScale(
+            gris,
+            scaleFactor=self._factor_escala,
+            minNeighbors=self._vecinos_minimos,
+            minSize=self._tamano_minimo,
+            flags=cv2.CASCADE_SCALE_IMAGE,
+        )
 
-            self._regiones_cache = nuevas_regiones
-            self._cantidad_cache = len(nuevas_regiones)
+        nuevas_regiones: list[tuple[int, int, int, int]] = []
+        if len(rostros) > 0:
+            factor_inverso = 1.0 / self._escala_redimension
+            for x, y, w, h in rostros:
+                x1 = int(round(x * factor_inverso))
+                y1 = int(round(y * factor_inverso))
+                x2 = min(int(round((x + w) * factor_inverso)), ancho)
+                y2 = min(int(round((y + h) * factor_inverso)), alto)
+                if x2 > x1 and y2 > y1:
+                    nuevas_regiones.append((x1, y1, x2, y2))
 
-        for x1, y1, x2, y2 in self._regiones_cache:
+        return nuevas_regiones, len(nuevas_regiones)
+
+    def aplicar_desenfoque(self, cuadro: np.ndarray, regiones: list[tuple[int, int, int, int]]) -> np.ndarray:
+        cuadro_salida = cuadro.copy()
+        alto, ancho = cuadro_salida.shape[:2]
+
+        for x1, y1, x2, y2 in regiones:
             x2c = min(x2, ancho)
             y2c = min(y2, alto)
-            roi = frame_salida[y1:y2c, x1:x2c]
+            roi = cuadro_salida[y1:y2c, x1:x2c]
             if roi.size > 0:
-                frame_salida[y1:y2c, x1:x2c] = cv2.GaussianBlur(
+                cuadro_salida[y1:y2c, x1:x2c] = cv2.GaussianBlur(
                     roi, (self._intensidad, self._intensidad), 30
                 )
 
-        return frame_salida, self._cantidad_cache
+        return cuadro_salida
+
+    def censurar_rostros(
+        self, cuadro: np.ndarray, recalcular: bool = True
+    ) -> tuple[np.ndarray, int]:
+        if recalcular:
+            self._regiones_cache, self._cantidad_cache = self.detectar_regiones_rostros(cuadro)
+        cuadro_salida = self.aplicar_desenfoque(cuadro, self._regiones_cache)
+        return cuadro_salida, self._cantidad_cache
 
     def liberar(self) -> None:
         self._regiones_cache.clear()

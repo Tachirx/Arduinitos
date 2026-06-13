@@ -59,8 +59,7 @@ const AuthContainer = ({ onLogin }) => {
         </div>
       </main>
 
-      {/* ════════════ FOOTER ════════════ */}
-      <footer className="site-footer" style={{ zIndex: 10, position: 'absolute', bottom: '10px', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
+      <footer className="site-footer">
         © {new Date().getFullYear()} UNEFA — Sistema de Detección de Uniforme. Todos los derechos reservados.
       </footer>
     </div>

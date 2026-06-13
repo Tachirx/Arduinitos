@@ -136,6 +136,17 @@ const DashboardView = ({ onLogout }) => {
   const reconnectDelayRef = React.useRef(1000);
   const reconnectTimerRef = React.useRef(null);
   const unmountedRef = React.useRef(false);
+  const contenedorVideoRef = React.useRef(null);
+
+  const alternarPantallaCompleta = () => {
+    if (!document.fullscreenElement) {
+      contenedorVideoRef.current?.requestFullscreen?.().catch(err => {
+        console.error("Error al iniciar pantalla completa:", err);
+      });
+    } else {
+      document.exitFullscreen?.();
+    }
+  };
 
   useEffect(() => {
     fetchStats();
@@ -417,7 +428,14 @@ const DashboardView = ({ onLogout }) => {
 
           {verEnVivo ? (
             <div className="dashboard__media-wrap">
-              <div className="dashboard__video-container">
+              <div className="dashboard__video-container" ref={contenedorVideoRef}>
+                <button 
+                  className="btn-fullscreen" 
+                  onClick={alternarPantallaCompleta}
+                  title="Alternar Pantalla Completa"
+                >
+                  <i className="fa fa-expand" />
+                </button>
                 <img
                   src="http://localhost:8001/stream"
                   alt="Transmisión en Vivo"
@@ -439,7 +457,14 @@ const DashboardView = ({ onLogout }) => {
             </div>
           ) : eventoSeleccionado ? (
             <div className="dashboard__media-wrap">
-              <div className="dashboard__video-container">
+              <div className="dashboard__video-container" ref={contenedorVideoRef}>
+                <button 
+                  className="btn-fullscreen" 
+                  onClick={alternarPantallaCompleta}
+                  title="Alternar Pantalla Completa"
+                >
+                  <i className="fa fa-expand" />
+                </button>
                 <img
                   src={`${API_URL}/${eventoSeleccionado.foto_path}`}
                   alt="Evidencia"

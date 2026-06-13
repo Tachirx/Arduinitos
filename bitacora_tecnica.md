@@ -98,3 +98,68 @@
 **Problema:** El comando `npm run build` fallaba debido a un error de sintaxis reportado por `lightningcss` (`Invalid token in pseudo element: WhiteSpace`). Se identificó un bloque de propiedades huérfanas debajo del selector `.badge-live__dot` en `dashboard.css`.
 
 **Solución:** Se corrigió el bloque CSS huérfano añadiendo el selector faltante `.badge-alert`, lo cual permitió que la compilación de Vite finalizara exitosamente. El proyecto ahora compila y está listo para producción.
+
+## [2026-06-11 09:32] docs: documentación exhaustiva de arquitectura y capa UI/UX
+
+**Archivo modificado:** `flujo_proyecto.md`
+
+**Resumen Técnico:**
+Se generó el artefacto de documentación técnica exhaustiva del sistema.
+1. **Arquitectura y Código:** Se documentó el propósito de los archivos principales en las 4 capas del proyecto (IA, Backend, Frontend, Hardware), incluyendo esquemas de BD, lógicas de inferencia asíncrona y flujos de WebSockets.
+2. **Capa UI/UX:** Se documentó el sistema visual detallando el uso de Design Tokens (paleta Navy+Gold), implementación en CSS puro del efecto Glassmorphism, fondos multicapa, sistema responsive (4 breakpoints) y el catálogo completo de micro-interacciones y animaciones.
+
+## [2026-06-11 12:42] fix: reescritura de EstabilizadorVentana y tuning de detección a distancia
+
+**Archivos modificados:** `ai/src/detector.py`, `ai/src/app.py`, `ai/src/configuracion.py`
+
+**Problema:** Se reportó que el recuadro "carnet" parpadeaba o se marcaba rojo (como inexistente) a pesar de estar presente frente a la cámara. Adicionalmente, el KPI de "Accesos OK" en el frontend no aumentaba, y la detección general fallaba estrepitosamente a media/larga distancia (>2m).
+
+**Solución Técnica:**
+1. **Refactorización de Tracking Espacial:** El bug raíz residía en el `EstabilizadorVentana`, el cual promediaba el estado "global" de la escena usando `all(est.carnet)` y sobrescribiendo destructivamente todos los objetos `EstudianteDetectado` de forma masiva (afectando detecciones correctas por culpa de un solo parpadeo u otro estudiante sin carnet). Se reescribió `EstabilizadorVentana` implementando un algoritmo de *Tracking 1D* (por `centro_x`). El sistema ahora aísla historiales `deque` individuales para cada estudiante rastreado con inercia local independiente.
+2. **Eventos Positivos al Backend:** En `app.py::MotorVisionIA._gestionar_alertas`, se incorporó la llamada silenciada a `self._notificador.enviar_evento` para el caso `cumple_normativa == True`. Esto finalmente provee un flujo de datos real hacia el frontend para alimentar el KPI de "Accesos OK".
+3. **High-Res Inference y Clustering:** En `detector.py`, se aumentó el tamaño de inferencia YOLO de `imgsz=480` a `imgsz=640`. Se incrementó la holgura del clustering de prendas de `110px` a `160px`. Para mitigar la dificultad del modelo frente al objeto más pequeño (Carnet), se bajó selectivamente su umbral de `0.65` a `0.45` directo en `_UMBRALES_POR_CLASE`. 
+4. **Respuesta Rápida:** En `configuracion.py`, se bajó la inercia temporal (`ventana_estabilizacion`) de 12 a 8, acelerando el switch verde/rojo visual del dashboard de ~400ms a ~260ms en 30FPS para una UI más "viva". Todo compilado exitosamente.
+
+## [2026-06-11 13:06] hotfix: auto-ecualización YOLO y memoria temporal de Tracker
+
+**Archivo modificado:** `ai/src/detector.py`
+
+**Problema:** En entornos sumamente oscuros o a contraluz (ej. un usuario probando a oscuras), los bordes de la ropa se difuminan en las sombras impidiendo a YOLO detectar el carnet o el pantalón de manera estable, generando "falsas alertas" que parpadeaban frame a frame. Además, si YOLO quedaba momentáneamente ciego por una sombra severa (0 rostros y 0 prendas), el sistema descartaba todo rastro previo de la persona en el acto.
+
+**Solución Técnica:**
+1. **Auto-Brillo Dinámico (Computer Vision):** En `inferir()`, se implementó un sistema analítico de medición del brillo general del frame con `np.mean()`. Si el brillo cae por debajo de 85 (muy oscuro), se aplica de forma dinámica la función matemática `cv2.convertScaleAbs(alpha=1.35, beta=35)` que fuerza un mayor contraste y sube artificialmente el brillo *solo para la red YOLO*. Esto le permite "ver en la oscuridad" de manera excelente sin afectar el archivo fotográfico de evidencia original en el sistema.
+2. **Memoria Temporal (Ghost Tracking):** Se actualizó drásticamente el `EstabilizadorVentana` para que los `EstudianteDetectado` de salida no provengan de la detección fresca del frame, sino de los propios "tracks" reconstruidos de memoria. Ahora, si YOLO queda ciego en un frame oscuro, el Tracker mantendrá a la persona "viva" y con su estado "suavizado" hasta por 5 frames (150ms).
+
+## [2026-06-12 17:15] fix: optimizacion de desenfoque a distancia y estabilizacion por inclinacion
+
+**Archivos modificados:** `ai/src/configuracion.py`, `ai/src/detector.py`, `ai/src/app.py`
+
+**Problema:** El sistema perdía capacidad de desenfocar rostros a distancias mayores a 2 metros o múltiples rostros, y el video en vivo sufría tirones (1 cuadro fluido por cada 5 congelados). Adicionalmente, leves inclinaciones en la cámara de la laptop provocaban inestabilidad y "parpadeo" pasando a estado DENEGADO por falsos negativos repetitivos en la ventana de estabilización.
+
+**Solución Técnica:**
+1. **Detección a Larga Distancia (High-Res Blur):** Se eliminó el diezmado rígido de resolución a 1/3 en el sensor de privacidad. Se parametrizó (`escala_redimension_censor=0.60`) junto con el refinado del escaneo en pirámide (`factor_escala_rostro=1.1`), reteniendo suficientes píxeles en el cuadro para localizar rostros distantes con precisión.
+2. **Streaming Fluido (Zero-Lag Blur):** Se desvinculó el cómputo de rostros de su renderizado. El hilo asíncrono (`CensorAsincrono`) ahora solo computa coordenadas de las cajas limítrofes, permitiendo al bucle principal de la aplicación aplicar el `cv2.GaussianBlur` sobre los cuadros frescos de forma síncrona, recuperando un streaming fluido real a 30 FPS.
+3. **Inercia de Detección Genuina:** Se detuvo la inyección de cuadros de inferencia duplicados al historial de `EstabilizadorVentana` validando contra un nuevo rastreador `id_inferencia`. El filtro temporal ahora procesa exclusivamente datos nuevos de YOLO. Los umbrales base (`umbrales_clases`) se externalizaron a `ConfiguracionIA` para suavizar y calibrar detecciones esquinadas o anguladas con la laptop. Todo compilado exitosamente.
+
+## [2026-06-13 07:48] feat: modernización de responsividad y streaming full-screen
+
+**Archivos modificados:** `ai/src/configuracion.py`, `frontend/src/styles/dashboard.css`, `frontend/src/components/Dashboard/DashboardView.jsx`
+
+**Problema:** La interfaz limitaba la experiencia de usuario: la cámara de 640x480 no era suficiente para detectar sujetos lejanos completos, no se podía visualizar la transmisión en pantalla completa, y el historial infinito forzaba un scroll hasta el fondo de la página perdiendo de vista los controles de la aplicación en monitores anchos.
+
+**Solución Técnica:**
+1. **Up-scaling Nativo del Sensor (Resolución HD):** Se subió la resolución base de captura de OpenCV (`ancho_cuadro` y `alto_cuadro`) en `configuracion.py` de `640x480` a `1280x720` (720p). Esto expande dramáticamente el rango de visión permitiendo a la IA rastrear estudiantes de cuerpo entero desde mayor distancia física sin perder precisión en el blur.
+2. **Streaming Inmersivo (Fullscreen API):** Se integró un botón superpuesto de "Pantalla Completa" en los contenedores de video usando `requestFullscreen()` nativo de HTML5 a través de referencias `useRef` en React. Se acopló su diseño con CSS (`.btn-fullscreen`) logrando un escalado inteligente (`object-fit: contain`) sin distorsión geométrica de la imagen.
+3. **Paginación Anclada (Flex Layout):** Se resolvió el desbordamiento infinito restringiendo la altura de la columna principal a `calc(100vh - 120px)`. Esto obliga al contenedor interno de historial a proveer barras de desplazamiento independientes, conservando anclada permanentemente la botonera de paginación a la vista del administrador.
+
+
+## [2026-06-13 07:58] - Responsividad en Landing (Login, Registro, Recuperación) y Dashboard
+
+**Archivos modificados:** `frontend/src/components/Auth/AuthContainer.jsx`, `frontend/src/components/Auth/RegisterView.jsx`, `frontend/src/styles/style.css`, `frontend/src/styles/dashboard.css`
+
+**Resumen Técnico:**
+1. **Landing Responsivo (Especificidad de ID):** Se identificó que el selector `#viewLogin` invalidaba los paddings responsivos de la clase `.view` en resoluciones pequeñas debido a la jerarquía de especificidad de CSS. Se incorporaron explícitamente overrides responsivos para `#viewLogin` en las media queries (`@media (max-width: 780px)` y `@media (max-width: 480px)`), reduciendo el padding a límites proporcionales en pantallas móviles y tablets.
+2. **Footer Adaptativo:** Se removió el posicionamiento rígido inline (`position: 'absolute'`) en el componente `AuthContainer.jsx` para el pie de página. Se delegó el comportamiento a la clase `.site-footer` en `style.css`, configurándolo como absoluto centrado en escritorio, y dinámico/relativo con `margin-top` en resoluciones inferiores a 780px. Esto evita la superposición del footer sobre los botones e inputs de los formularios de registro y recuperación.
+3. **Escalado del Logo:** Se modificó la regla del logo en móvil para forzar `height: auto` en lugar de `height: 100px` fijos, lo que elimina cualquier riesgo de distorsión geométrica en el escudo UNEFA.
+4. **Preguntas de Seguridad Multi-línea:** En `RegisterView.jsx`, se refactorizó el sub-contenedor de preguntas y respuestas de seguridad aplicando `flexWrap: 'wrap'` junto a un ancho base flexible `flex: '1 1 200px'` en los elementos hijos. En resoluciones inferiores a 400px (móviles), los campos `<select>` e `<input>` se apilan verticalmente, garantizando una usabilidad perfecta y previniendo el desbordamiento horizontal.
+5. **Dashboard en Móvil (Scroll Natural):** Se agregó una regla en `dashboard.css` dentro de la media query `@media (max-width: 768px)` para definir `.dashboard__col-left { max-height: none; }`. Esto remueve el límite de altura estricto de la columna izquierda que forzaba un scroll interno incómodo en dispositivos móviles, permitiendo al usuario scrollear de manera nativa toda la página.

@@ -177,10 +177,10 @@ const RegisterView = ({ isActive, navigateTo }) => {
         <div className="form-group form-group--full" style={{ marginTop: '5px' }}>
           <h3 style={{ fontSize: '12px', marginBottom: '10px', color: 'var(--accent-teal)', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '5px', letterSpacing: '1px' }}>PREGUNTAS DE SEGURIDAD (Obligatorias para recuperar cuenta)</h3>
           {preguntas.map((p, index) => (
-            <div key={index} style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+            <div key={index} style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
               <select 
                 className="input" 
-                style={{ flex: 1, paddingLeft: '10px', color: 'black' }} 
+                style={{ flex: '1 1 200px', paddingLeft: '10px', color: 'black' }} 
                 value={p.pregunta}
                 onChange={(e) => handlePreguntaChange(index, 'pregunta', e.target.value)}
               >
@@ -189,7 +189,7 @@ const RegisterView = ({ isActive, navigateTo }) => {
               <input 
                 type="text" 
                 className="input" 
-                style={{ flex: 1, paddingLeft: '10px' }} 
+                style={{ flex: '1 1 200px', paddingLeft: '10px' }} 
                 placeholder="Respuesta secreta" 
                 value={p.respuesta}
                 onChange={(e) => handlePreguntaChange(index, 'respuesta', e.target.value)}

@@ -178,6 +178,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  max-height: calc(100vh - 120px);
 }
 
 /* ── KPIs ─────────────────────────────── */
@@ -482,6 +483,25 @@
   font-size: 0.8rem;
 }
 
+.btn-fullscreen {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.2s;
+}
+.btn-fullscreen:hover {
+  background: rgba(100, 255, 218, 0.2);
+  color: var(--accent-teal, #64ffda);
+  border-color: rgba(100, 255, 218, 0.4);
+}
+
 .dashboard__detail-info {
   margin-top: 16px;
   padding: 14px;
@@ -545,6 +565,10 @@
 
 /* Mobile landscape / small tablet */
 @media (max-width: 768px) {
+  .dashboard__col-left {
+    max-height: none;
+  }
+
   .dashboard__header {
     padding: 12px 16px;
     flex-wrap: wrap;
