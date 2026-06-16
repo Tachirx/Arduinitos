@@ -21,6 +21,8 @@ class StreamHandler(BaseHTTPRequestHandler):
             self.end_headers()
 
             try:
+                if self.streamer_instance:
+                    self.streamer_instance.registrar_conexion()
                 while True:
                     if self.streamer_instance:
                         frame_bytes = self.streamer_instance.obtener_frame_bytes()
@@ -36,6 +38,9 @@ class StreamHandler(BaseHTTPRequestHandler):
             except Exception:
                 # El cliente (Dashboard) cerró la conexión o cambió de vista
                 pass
+            finally:
+                if self.streamer_instance:
+                    self.streamer_instance.desregistrar_conexion()
         else:
             self.send_response(404)
             self.end_headers()
@@ -50,11 +55,22 @@ class StreamerLocal:
     def __init__(self, puerto: int = 8001):
         self.puerto = puerto
         self._frame_bytes = None
+        self.clientes_activos = 0
         self._lock = threading.Lock()
         self._condition = threading.Condition(self._lock)
         self._server = None
         self._hilo = None
         StreamHandler.streamer_instance = self
+
+    def registrar_conexion(self) -> None:
+        with self._lock:
+            self.clientes_activos += 1
+            log.info("Cliente de streaming conectado. Clientes activos: %d", self.clientes_activos)
+
+    def desregistrar_conexion(self) -> None:
+        with self._lock:
+            self.clientes_activos = max(0, self.clientes_activos - 1)
+            log.info("Cliente de streaming desconectado. Clientes activos: %d", self.clientes_activos)
 
     def iniciar(self) -> None:
         class ThreadedHTTPServer(socketserver.ThreadingMixIn, HTTPServer):
@@ -77,6 +93,12 @@ class StreamerLocal:
         log.info("Servidor de streaming detenido.")
 
     def actualizar_frame(self, frame) -> None:
+        # Optimización de CPU: Evitamos codificación JPEG si no hay clientes visualizando
+        with self._lock:
+            hay_clientes = self.clientes_activos > 0
+        if not hay_clientes:
+            return
+
         try:
             # Comprimimos al 65% para un streaming muy ligero
             _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 65])

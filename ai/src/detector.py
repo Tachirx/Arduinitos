@@ -89,9 +89,10 @@ class EstabilizadorVentana:
         "uniforme_superior",
     ]
 
-    def __init__(self, ventana: int = 12, fraccion_minima: float = 0.55) -> None:
+    def __init__(self, ventana: int = 12, fraccion_minima: float = 0.55, umbral_tracking: int = 160) -> None:
         self._ventana = ventana
         self._fraccion = fraccion_minima
+        self._umbral_tracking = umbral_tracking
         self._historial_rostros: deque = deque(maxlen=ventana)
         self._personas_trackeadas: list[dict] = []
 
@@ -108,7 +109,7 @@ class EstabilizadorVentana:
             min_dist = 9999
             for t in self._personas_trackeadas:
                 dist = abs(t["cx"] - est.centro_x)
-                if dist < 160 and dist < min_dist:
+                if dist < self._umbral_tracking and dist < min_dist:
                     min_dist = dist
                     track_match = t
                     
@@ -166,17 +167,20 @@ class DetectorVestimenta:
         umbral_confianza: float,
         clases_objetivo: dict,
         umbrales_clases: dict[str, float] = None,
+        umbral_agrupamiento: int = 160,
     ) -> None:
         self._modelo = YOLO(ruta_modelo)
         self._modelo.fuse()
         self._umbral_base = umbral_confianza
         self._clases = clases_objetivo
         self._umbrales_clases = umbrales_clases or {}
+        self._umbral_agrupamiento = umbral_agrupamiento
         log.info(
-            "Modelo YOLO cargado y fusionado: %s | Umbral base: %s | Umbrales dinamicos: %s",
+            "Modelo YOLO cargado y fusionado: %s | Umbral base: %s | Umbrales dinamicos: %s | Umbral agrupamiento: %s",
             ruta_modelo,
             self._umbral_base,
             self._umbrales_clases,
+            self._umbral_agrupamiento,
         )
 
     def inferir(self, cuadro: np.ndarray) -> ResultadoDeteccion:
@@ -230,7 +234,7 @@ class DetectorVestimenta:
             agrupado = False
             for grupo in grupos:
                 centro_grupo = sum(g["cx"] for g in grupo) / len(grupo)
-                if abs(obj["cx"] - centro_grupo) < 160:
+                if abs(obj["cx"] - centro_grupo) < self._umbral_agrupamiento:
                     grupo.append(obj)
                     agrupado = True
                     break
@@ -286,6 +290,8 @@ class CensorPrivacidad:
 
         self._regiones_cache: list[tuple[int, int, int, int]] = []
         self._cantidad_cache: int = 0
+        self._regiones_previas: list[tuple[int, int, int, int]] = []
+        self._ciclos_sin_rostro: int = 0
         log.info("OpenCV Face Detection iniciado | Blur kernel: %d | Escala: %.2f", self._intensidad, self._escala_redimension)
 
     def detectar_regiones_rostros(self, cuadro: np.ndarray) -> tuple[list[tuple[int, int, int, int]], int]:
@@ -321,6 +327,17 @@ class CensorPrivacidad:
                 if x2 > x1 and y2 > y1:
                     nuevas_regiones.append((x1, y1, x2, y2))
 
+        # --- Lógica de persistencia de rostros ---
+        if nuevas_regiones:
+            self._regiones_previas = nuevas_regiones
+            self._ciclos_sin_rostro = 0
+        else:
+            if self._ciclos_sin_rostro < 3 and self._regiones_previas:
+                self._ciclos_sin_rostro += 1
+                nuevas_regiones = self._regiones_previas
+            else:
+                self._regiones_previas = []
+
         return nuevas_regiones, len(nuevas_regiones)
 
     def aplicar_desenfoque(self, cuadro: np.ndarray, regiones: list[tuple[int, int, int, int]]) -> np.ndarray:
@@ -328,11 +345,19 @@ class CensorPrivacidad:
         alto, ancho = cuadro_salida.shape[:2]
 
         for x1, y1, x2, y2 in regiones:
-            x2c = min(x2, ancho)
-            y2c = min(y2, alto)
-            roi = cuadro_salida[y1:y2c, x1:x2c]
+            ancho_caja = x2 - x1
+            alto_caja = y2 - y1
+            margen_x = int(ancho_caja * 0.15)
+            margen_y = int(alto_caja * 0.15)
+
+            x1_exp = max(0, x1 - margen_x)
+            y1_exp = max(0, y1 - margen_y)
+            x2_exp = min(x2 + margen_x, ancho)
+            y2_exp = min(y2 + margen_y, alto)
+
+            roi = cuadro_salida[y1_exp:y2_exp, x1_exp:x2_exp]
             if roi.size > 0:
-                cuadro_salida[y1:y2c, x1:x2c] = cv2.GaussianBlur(
+                cuadro_salida[y1_exp:y2_exp, x1_exp:x2_exp] = cv2.GaussianBlur(
                     roi, (self._intensidad, self._intensidad), 30
                 )
 

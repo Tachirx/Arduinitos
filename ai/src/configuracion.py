@@ -29,6 +29,7 @@ class ConfiguracionIA:
             "uniforme_superior": 0.55,
         }
     )
+    umbral_agrupamiento_px: int = 320
 
     def __post_init__(self) -> None:
         if not self.ruta_modelo:
@@ -43,9 +44,9 @@ class ConfiguracionIA:
     fps_objetivo: int = 30
 
     # --- Privacidad y Rendimiento (Censor y YOLO) ---
-    escala_redimension_censor: float = 0.60
+    escala_redimension_censor: float = 0.40
     factor_escala_rostro: float = 1.1
-    vecinos_minimos_rostro: int = 4
+    vecinos_minimos_rostro: int = 3
     tamano_minimo_rostro: tuple[int, int] = (15, 15)
     intensidad_blur: int = 99
 

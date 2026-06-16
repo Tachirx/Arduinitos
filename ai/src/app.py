@@ -165,6 +165,7 @@ class MotorVisionIA:
             umbral_confianza=self._config.umbral_confianza,
             clases_objetivo=self._config.clases_objetivo,
             umbrales_clases=self._config.umbrales_clases,
+            umbral_agrupamiento=self._config.umbral_agrupamiento_px,
         )
         self._inferencia = InferenciaAsincrona(self._detector)
 
@@ -180,6 +181,7 @@ class MotorVisionIA:
         self._estabilizador = EstabilizadorVentana(
             ventana=self._config.ventana_estabilizacion,
             fraccion_minima=self._config.fraccion_estabilizacion,
+            umbral_tracking=self._config.umbral_agrupamiento_px,
         )
         self._filtro = FiltroNovedad(
             cooldown_segundos=self._config.cooldown_alerta_seg,
