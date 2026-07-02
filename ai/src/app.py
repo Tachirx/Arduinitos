@@ -241,13 +241,13 @@ class MotorVisionIA:
                 ret, cuadro = self._captura.leer()
 
             if not ret or cuadro is None:
-                # Generar cuadro diagnóstico (Modo degradado)
+                
                 cuadro = np.zeros((480, 640, 3), dtype=np.uint8)
                 cv2.putText(
                     cuadro, "ERROR: SIN SENAL DE CAMARA", (40, 240),
                     cv2.FONT_HERSHEY_DUPLEX, 1.0, (30, 30, 200), 2
                 )
-                time.sleep(1.0 / 15.0)  # FPS reducido en standby
+                time.sleep(1.0 / 15.0) 
             else:
                 self._contador_frames += 1
 
@@ -257,7 +257,7 @@ class MotorVisionIA:
             if self._contador_frames % self._config.salto_censor == 0:
                 self._censor.enviar_cuadro(cuadro)
 
-            # Aplicar blur de forma sincrónica para evitar tirones en el video
+           
             regiones_rostros, cantidad_rostros = self._censor.obtener_regiones_y_cantidad()
             cuadro_censurado = self._censor_base.aplicar_desenfoque(cuadro, regiones_rostros)
 
@@ -265,13 +265,13 @@ class MotorVisionIA:
 
             resultado_crudo, id_inferencia = self._inferencia.obtener_resultado()
             
-            # Solo actualizar el tracker si es un cuadro de inferencia nuevo y real
+         
             if id_inferencia != ultimo_id_inferencia:
                 ultimo_id_inferencia = id_inferencia
                 resultado_crudo.rostros_detectados = cantidad_rostros
                 resultado = self._estabilizador.actualizar(resultado_crudo)
             else:
-                # Mantener actualizados los rostros desde el censor aunque no haya inferencia YOLO
+              
                 resultado.rostros_detectados = cantidad_rostros
 
             ahora = time.monotonic()
@@ -287,8 +287,7 @@ class MotorVisionIA:
 
             self._streamer.actualizar_frame(cuadro_renderizado)
 
-            # Ejecución Headless: El renderizado visual ahora se maneja 
-            # de manera asíncrona a través del streamer MJPEG en el frontend.
+         
 
             transcurrido = time.monotonic() - t_inicio
             tiempo_restante = _FRAME_INTERVAL - transcurrido
@@ -325,7 +324,7 @@ class MotorVisionIA:
             cuadro_hud = cuadro.copy()
             alto, ancho = cuadro_hud.shape[:2]
 
-            # 1. Dibujar panel de diagnóstico general en la esquina superior izquierda
+           
             cant_estudiantes = len(resultado.estudiantes)
             ancho_panel, alto_panel = 230, 75
             px1, py1 = 15, 15
@@ -357,14 +356,14 @@ class MotorVisionIA:
                 cv2.FONT_HERSHEY_DUPLEX, 0.4, (150, 255, 150) if estado_global else (120, 120, 255), 1
             )
 
-            # 2. Dibujar cajas envolventes y etiquetas flotantes individuales
+           
             for i, est in enumerate(resultado.estudiantes):
                 color = (45, 160, 45) if est.cumple_normativa else (30, 30, 200)
                 
-                # Bounding box envolvente de la persona
+             
                 cv2.rectangle(cuadro_hud, (est.x1, est.y1), (est.x2, est.y2), color, 2)
 
-                # Construir etiqueta individual
+               
                 if est.cumple_normativa:
                     msg = f"E{i+1}: ACCESO PERMITIDO"
                 else:
@@ -377,11 +376,11 @@ class MotorVisionIA:
                         faltantes.append("Carnet")
                     msg = f"E{i+1}: DENEGADO - Faltantes: {', '.join(faltantes)}"
 
-                # Dibujar fondo de la etiqueta flotante sobre su cabeza
+               
                 lbl_y = max(18, est.y1 - 10)
                 lbl_x = max(10, est.x1)
                 
-                # Ajustar tamaño del fondo de etiqueta según texto
+             
                 (lbl_w, lbl_h), _ = cv2.getTextSize(msg, cv2.FONT_HERSHEY_DUPLEX, 0.38, 1)
                 cv2.rectangle(
                     cuadro_hud, 
@@ -395,13 +394,13 @@ class MotorVisionIA:
                     cv2.FONT_HERSHEY_DUPLEX, 0.38, (255, 255, 255), 1
                 )
 
-            # 3. Dibujar indicador de FPS
+          
             cv2.putText(
                 cuadro_hud, f"{fps:.1f} FPS", (ancho - 75, alto - 15),
                 cv2.FONT_HERSHEY_DUPLEX, 0.4, (0, 185, 255), 1,
             )
             return cuadro_hud
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc: 
             log.error("Error al dibujar HUD: %s", exc)
             return cuadro
 

@@ -63,7 +63,7 @@ class ResultadoDeteccion:
             return self.estudiantes[0].confianzas
         return {}
 
-    # Propiedades de compatibilidad retrospectiva con alertas.py y backend
+    
     @property
     def carnet(self) -> bool:
         return all(est.carnet for est in self.estudiantes) if self.estudiantes else False
@@ -97,40 +97,45 @@ class EstabilizadorVentana:
         self._personas_trackeadas: list[dict] = []
 
     def actualizar(self, resultado: ResultadoDeteccion) -> ResultadoDeteccion:
-        # Envejecer tracks para limpiar los que ya no están en escena
+        
         for t in self._personas_trackeadas:
             t["edad"] += 1
 
         estabilizado = ResultadoDeteccion(estudiantes=[])
         
-        # Procesar detecciones crudas del frame actual
+        
+        tracks_asociados = set()
         for est in resultado.estudiantes:
             track_match = None
             min_dist = 9999
             for t in self._personas_trackeadas:
+                if id(t) in tracks_asociados:
+                    continue
                 dist = abs(t["cx"] - est.centro_x)
                 if dist < self._umbral_tracking and dist < min_dist:
                     min_dist = dist
                     track_match = t
                     
             if track_match:
+                tracks_asociados.add(id(track_match))
                 track_match["edad"] = 0
                 track_match["cx"] = est.centro_x
                 track_match["box"] = (est.x1, est.y1, est.x2, est.y2)
                 for c in self._CAMPOS:
                     track_match["hist"][c].append(int(getattr(est, c)))
             else:
-                track_match = {
+                nuevo_track = {
                     "cx": est.centro_x,
                     "edad": 0,
                     "box": (est.x1, est.y1, est.x2, est.y2),
                     "hist": {c: deque([int(getattr(est, c))], maxlen=self._ventana) for c in self._CAMPOS}
                 }
-                self._personas_trackeadas.append(track_match)
+                self._personas_trackeadas.append(nuevo_track)
+                tracks_asociados.add(id(nuevo_track))
                 
-        # Reconstruir la escena desde la memoria del Tracker
+        
         for t in self._personas_trackeadas:
-            if t["edad"] < 5:  # Tolerar hasta 5 frames "ciegos" de YOLO
+            if t["edad"] < 5:  
                 x1, y1, x2, y2 = t["box"]
                 nuevo_est = EstudianteDetectado(
                     x1=x1, y1=y1, x2=x2, y2=y2, centro_x=t["cx"]
@@ -143,10 +148,10 @@ class EstabilizadorVentana:
                         setattr(nuevo_est, c, proporcion >= self._fraccion)
                 estabilizado.estudiantes.append(nuevo_est)
 
-        # Limpiar tracks de personas que salieron de la cámara (>5 frames ausentes)
+        
         self._personas_trackeadas = [t for t in self._personas_trackeadas if t["edad"] < 5]
 
-        # Estabilización de rostros se mantiene global
+        
         self._historial_rostros.append(resultado.rostros_detectados)
         if self._historial_rostros:
             valores = sorted(self._historial_rostros)
@@ -186,11 +191,11 @@ class DetectorVestimenta:
     def inferir(self, cuadro: np.ndarray) -> ResultadoDeteccion:
         umbral_yolo = min(self._umbrales_clases.values()) if self._umbrales_clases else self._umbral_base
 
-        # Preprocesamiento de iluminación adaptativa para YOLO
+       
         brillo_promedio = np.mean(cuadro)
         cuadro_yolo = cuadro
         if brillo_promedio < 85:
-            # Multiplica canales para forzar contraste e ilumina las sombras
+            
             cuadro_yolo = cv2.convertScaleAbs(cuadro, alpha=1.35, beta=35)
 
         resultados = self._modelo(
@@ -226,13 +231,18 @@ class DetectorVestimenta:
         if not objetos:
             return resultado
 
-        # --- Algoritmo de Clustering Espacial 1D por Proximidad Horizontal ---
+       
         objetos_ordenados = sorted(objetos, key=lambda x: x["cx"])
         grupos: list[list[dict]] = []
 
         for obj in objetos_ordenados:
             agrupado = False
             for grupo in grupos:
+               
+                tiene_mismo_tipo = any(g["nombre"] == obj["nombre"] for g in grupo)
+                if tiene_mismo_tipo:
+                    continue
+
                 centro_grupo = sum(g["cx"] for g in grupo) / len(grupo)
                 if abs(obj["cx"] - centro_grupo) < self._umbral_agrupamiento:
                     grupo.append(obj)
@@ -241,7 +251,7 @@ class DetectorVestimenta:
             if not agrupado:
                 grupos.append([obj])
 
-        # --- Instanciar EstudianteDetectado por cada grupo ---
+      
         for grupo in grupos:
             x1_env = min(g["coords"][0] for g in grupo)
             y1_env = min(g["coords"][1] for g in grupo)
@@ -327,7 +337,7 @@ class CensorPrivacidad:
                 if x2 > x1 and y2 > y1:
                     nuevas_regiones.append((x1, y1, x2, y2))
 
-        # --- Lógica de persistencia de rostros ---
+        
         if nuevas_regiones:
             self._regiones_previas = nuevas_regiones
             self._ciclos_sin_rostro = 0

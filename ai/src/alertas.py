@@ -43,12 +43,12 @@ class FiltroNovedad:
 def _emitir_beep_sistema(frecuencia: int, duracion_ms: int) -> None:
     try:
         if sys.platform == "win32":
-            import winsound  # pylint: disable=import-outside-toplevel
+            import winsound 
             winsound.Beep(frecuencia, duracion_ms)
         else:
             sys.stdout.write("\a")
             sys.stdout.flush()
-    except Exception:  # noqa: BLE001
+    except Exception: 
         log.warning("No se pudo emitir beep (entorno sin audio).")
 
 class AlertaSonora:
@@ -121,7 +121,7 @@ class NotificadorBackend:
                     continue
                 except httpx.ConnectError:
                     log.warning("Backend no disponible. Evento descartado.")
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc: 
                     log.error("Error enviando evento: %s", exc)
 
     @staticmethod

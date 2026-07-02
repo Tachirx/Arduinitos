@@ -7,7 +7,7 @@ import socketserver
 log = logging.getLogger("ia.streamer")
 
 class StreamHandler(BaseHTTPRequestHandler):
-    streamer_instance = None  # Referencia global a la instancia
+    streamer_instance = None 
 
     def do_GET(self):
         if self.path == '/stream':
@@ -15,7 +15,7 @@ class StreamHandler(BaseHTTPRequestHandler):
             self.send_header('Age', 0)
             self.send_header('Cache-Control', 'no-cache, private')
             self.send_header('Pragma', 'no-cache')
-            # Permite empotrar el img src libremente
+           
             self.send_header('Access-Control-Allow-Origin', '*') 
             self.send_header('Content-Type', 'multipart/x-mixed-replace; boundary=FRAME')
             self.end_headers()
@@ -33,10 +33,10 @@ class StreamHandler(BaseHTTPRequestHandler):
                             self.end_headers()
                             self.wfile.write(frame_bytes)
                             self.wfile.write(b'\r\n')
-                    # Espera condicional para no transmitir más de los FPS reales
+                   
                     self.streamer_instance.esperar_nuevo_frame(timeout=0.05)
             except Exception:
-                # El cliente (Dashboard) cerró la conexión o cambió de vista
+               
                 pass
             finally:
                 if self.streamer_instance:
@@ -47,7 +47,7 @@ class StreamHandler(BaseHTTPRequestHandler):
             self.wfile.write(b'Ruta no encontrada')
 
     def log_message(self, format, *args):
-        # Desactivamos los logs ruidosos HTTP
+       
         pass
 
 class StreamerLocal:
@@ -93,18 +93,18 @@ class StreamerLocal:
         log.info("Servidor de streaming detenido.")
 
     def actualizar_frame(self, frame) -> None:
-        # Optimización de CPU: Evitamos codificación JPEG si no hay clientes visualizando
+        
         with self._lock:
             hay_clientes = self.clientes_activos > 0
         if not hay_clientes:
             return
 
         try:
-            # Comprimimos al 65% para un streaming muy ligero
+           
             _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 65])
             with self._condition:
                 self._frame_bytes = buffer.tobytes()
-                # Avisa a todos los clientes web que hay un nuevo frame
+               
                 self._condition.notify_all()
         except Exception as e:
             log.error("Error codificando frame: %s", e)
