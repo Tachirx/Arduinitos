@@ -5,12 +5,12 @@ def setup_logger(name: str) -> logging.Logger:
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
     
-    # Formato para ver de forma clara en la terminal
+    
     formatter = logging.Formatter(
         "%(asctime)s | %(levelname)-8s | %(name)s:%(lineno)d | %(message)s"
     )
     
-    # Consola
+
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)

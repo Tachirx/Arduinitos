@@ -37,7 +37,7 @@ class DespachadorHardware:
         """
         if not self._modo_fallback and self._serial and self._serial.is_open:
             try:
-                # Transmitir pulso de activación a la placa
+              
                 self._serial.write(b"ACTIVAR_ALARMA\n")
                 log.debug("Señal UART de alerta enviada al hardware exitosamente.")
             except Exception as e:
@@ -53,7 +53,7 @@ class DespachadorHardware:
         if platform.system() == "Windows":
             try:
                 import winsound
-                # Dos beeps graves y sonoros (850Hz, 400ms)
+               
                 winsound.Beep(850, 400)
                 winsound.Beep(850, 400)
             except Exception as e:
@@ -61,5 +61,5 @@ class DespachadorHardware:
         else:
             log.warning("Alerta acústica ignorada: El sistema operativo no es Windows.")
 
-# Instancia global para ser consumida en las capas de red del API
+
 despachador = DespachadorHardware()

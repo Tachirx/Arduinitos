@@ -107,14 +107,14 @@ def registrar_evento(evento: dict, db: Session = Depends(obtener_db)):
 def registrar_evento_ia(datos: DatosEventoIA, background_tasks: BackgroundTasks, db: Session = Depends(obtener_db)):
     """Recibe, decodifica y persiste los eventos enviados por el motor de visión artificial."""
     try:
-        # 1. Definir y asegurar la existencia de la carpeta de almacenamiento físico
+        
         ruta_directorio_base = os.path.dirname(os.path.abspath(__file__))
         ruta_almacenamiento = os.path.abspath(
             os.path.join(ruta_directorio_base, "..", "almacenamiento", "eventos")
         )
         os.makedirs(ruta_almacenamiento, exist_ok=True)
 
-        # 2. Decodificar la imagen en Base64 enviada como evidencia
+      
         try:
             imagen_bytes = base64.b64decode(datos.evidencia_b64)
         except Exception as exc:
@@ -123,17 +123,17 @@ def registrar_evento_ia(datos: DatosEventoIA, background_tasks: BackgroundTasks,
                 detail=f"Evidencia fotográfica corrupta o codificación Base64 inválida: {exc}"
             )
 
-        # 3. Guardar el archivo físico en el almacenamiento del servidor
+       
         nombre_archivo = f"evento_{int(time.time())}.jpg"
         ruta_archivo_completa = os.path.join(ruta_almacenamiento, nombre_archivo)
         
         with open(ruta_archivo_completa, "wb") as archivo_imagen:
             archivo_imagen.write(imagen_bytes)
 
-        # Ruta relativa uniforme para guardar en base de datos
+       
         ruta_relativa_db = f"almacenamiento/eventos/{nombre_archivo}"
 
-        # 4. Crear e insertar el registro del evento en la base de datos MariaDB
+      
         estado_inicial = "pendiente" if not datos.cumple_normativa else "registrado"
         alerta_activa = not datos.cumple_normativa
 
@@ -153,11 +153,11 @@ def registrar_evento_ia(datos: DatosEventoIA, background_tasks: BackgroundTasks,
         db.commit()
         db.refresh(nuevo_evento)
 
-        # 5. Emitir alerta física/acústica si hay incumplimiento normativo
+      
         if alerta_activa:
             despachador.emitir_alerta()
 
-        # 6. Emitir por WebSocket
+
         evento_dict = {
             "id": nuevo_evento.id,
             "fecha": nuevo_evento.fecha.isoformat(),

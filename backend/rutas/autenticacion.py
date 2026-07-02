@@ -11,7 +11,7 @@ from core.autenticacion import generar_hash_clave, verificar_clave, crear_token_
 
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
 
-# Esquemas de Pydantic
+
 class PreguntaSeguridad(BaseModel):
     pregunta: str
     respuesta: str
@@ -31,17 +31,17 @@ class Token(BaseModel):
 
 @router.post("/registrar", response_model=Token, status_code=status.HTTP_201_CREATED)
 def registrar_usuario(datos: RegistroUsuario, db: Session = Depends(obtener_db)):
-    # Normalización estandarizada del usuario/cédula
+    
     cedula_limpia = datos.cedula.strip().upper()
     if cedula_limpia.isdigit():
         cedula_limpia = f"V-{cedula_limpia}"
         
-    # Verificar si ya existe el usuario
+   
     existente = db.query(Usuario).filter(Usuario.cedula == cedula_limpia).first()
     if existente:
         raise HTTPException(status_code=400, detail="La cédula ya se encuentra registrada.")
     
-    #  clave y respuestas de seguridad
+    
     clave_hash = generar_hash_clave(datos.clave)
     preguntas_procesadas = []
     for p in datos.preguntas:
@@ -71,7 +71,7 @@ def registrar_usuario(datos: RegistroUsuario, db: Session = Depends(obtener_db))
 def iniciar_sesion(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(obtener_db)):
     usuario_ingresado = form_data.username.strip()
     
-    # Truco UX: Si ingresaron solo números, asumimos por defecto que es una cédula venezolana
+    
     if usuario_ingresado.isdigit():
         usuario_ingresado = f"V-{usuario_ingresado}"
         
@@ -80,11 +80,11 @@ def iniciar_sesion(form_data: OAuth2PasswordRequestForm = Depends(), db: Session
     if not usuario:
         raise HTTPException(status_code=401, detail="Cédula o clave incorrecta")
     
-    # por si está bloqueado
+    
     verificar_bloqueo(usuario)
     
     if not verificar_clave(form_data.password, usuario.clave_hash):
-        # el numero de intentos fallidos
+       
         usuario.intentos_fallidos += 1
         if usuario.intentos_fallidos >= 5:
             usuario.inicio_bloqueo = datetime.utcnow()
@@ -96,7 +96,7 @@ def iniciar_sesion(form_data: OAuth2PasswordRequestForm = Depends(), db: Session
         db.commit()
         raise HTTPException(status_code=401, detail="Cédula o clave incorrecta")
     
-    # Reiniciar intentos fallidos tras éxito
+
     usuario.intentos_fallidos = 0
     usuario.inicio_bloqueo = None
     db.commit()
