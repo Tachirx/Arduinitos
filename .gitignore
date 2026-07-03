@@ -4,6 +4,9 @@
 logs/
 especificacion_modelo_ia.md
 bitacora_tecnica.md
+backend/almacenamiento/
+*.jpg
+
 
 # Backend & IA (Python)
 __pycache__/

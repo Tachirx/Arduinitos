@@ -22,31 +22,44 @@ Este es el repositorio maestro del sistema de monitoreo institucional basado en 
 6. **Integraciones:** Se debe crear cuenta en **n8n** (Tachiro) para gestión de flujos.
 7. **Tiempos:** Límite por módulo de 2 a 3 días. El trabajo es equitativo (50/50 por módulo).
 
-## Iniciar el Entorno
+## Arranque Rápido (Windows)
 
-### 1. El Backend
+Para iniciar todo el sistema con un solo clic (compilación de React, creación de entornos virtuales y arranque de servicios), ejecuta desde la raíz:
+
+```cmd
+iniciar_sistema.bat
+```
+El sistema abrirá automáticamente las ventanas de servicio y estará disponible en `http://localhost:8000`.
+
+---
+
+## Ejecución Manual por Módulos
+
+### 1. Backend (FastAPI)
 ```bash
 cd backend
 python -m venv venv
-# Activar venv según OS (venv\Scripts\activate en Windows)
-pip install fastapi uvicorn
+venv\Scripts\activate
+pip install -r requirements.txt
 python main.py
 ```
 
-### 2. El Frontend
+### 2. Frontend (React + Vite)
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-### 3. La IA
+### 3. Motor de Inteligencia Artificial (YOLOv8 + MediaPipe)
 ```bash
 cd ai
-# Recomendable: Compartir el venv del Backend si corren en el mismo servidor.
-pip install opencv-python ultralytics
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
 python src/app.py
 ```
 
-### 4. Hardware
-Cargar `hardware/firmware/main.ino` en la placa Arduino usando el IDE de Arduino y monitorear salida Serial a 9600 baudios.
+### 4. Hardware (Arduino)
+Carga el archivo `hardware/firmware/main.ino` en la placa usando el IDE de Arduino. El microcontrolador se comunicará con el Backend a 9600 baudios por el puerto Serial configurado.
+
